@@ -1,0 +1,329 @@
+
+<h2 class="sr-only">Aplikasi checklist jadwal harian dengan tampilan menarik</h2>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.app{padding:1.25rem 0;font-family:var(--font-sans)}
+.hero{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-xl);padding:20px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hero-left{}
+.hero-greeting{font-size:12px;color:var(--color-text-secondary);margin-bottom:2px}
+.hero-day{font-size:22px;font-weight:500;color:var(--color-text-primary);line-height:1.2}
+.hero-date{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+.hero-right{text-align:right}
+.streak-num{font-size:32px;font-weight:500;color:#1D9E75;line-height:1}
+.streak-label{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat-card{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:12px;text-align:center}
+.stat-num{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.stat-lbl{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+
+.must-big{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-xl);padding:20px;margin-bottom:14px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden}
+.must-big:hover{border-color:var(--color-border-secondary)}
+.must-big.done{opacity:.6}
+.must-accent{width:4px;border-radius:4px;background:#1D9E75;position:absolute;left:0;top:0;bottom:0}
+.must-big.done .must-accent{background:var(--color-border-secondary)}
+.must-inner{padding-left:14px;display:flex;align-items:center;gap:16px}
+.check-ring{width:44px;height:44px;border-radius:50%;border:2px solid var(--color-border-secondary);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .22s}
+.check-ring.on{background:#1D9E75;border-color:#1D9E75}
+.check-ring svg{opacity:0;transition:opacity .2s}
+.check-ring.on svg{opacity:1}
+.must-text{flex:1}
+.must-title{font-size:17px;font-weight:500;color:var(--color-text-primary);transition:all .2s}
+.must-big.done .must-title{text-decoration:line-through;color:var(--color-text-secondary)}
+.must-sub{font-size:12px;color:var(--color-text-secondary);margin-top:3px}
+.must-badge-pill{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500;display:inline-block;margin-top:6px}
+
+.prog-wrap{margin-bottom:14px}
+.prog-header{display:flex;justify-content:space-between;font-size:12px;color:var(--color-text-secondary);margin-bottom:6px}
+.prog-track{height:8px;background:var(--color-background-secondary);border-radius:8px;overflow:hidden}
+.prog-fill{height:100%;border-radius:8px;background:#1D9E75;transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+.week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px}
+.wday{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;border-radius:var(--border-radius-lg);background:var(--color-background-secondary);border:0.5px solid transparent}
+.wday.today{border-color:#1D9E75;background:#E1F5EE}
+.wday.has-done{background:#E1F5EE}
+.wday-lbl{font-size:10px;color:var(--color-text-secondary);font-weight:500}
+.wday.today .wday-lbl{color:#085041}
+.wday-dot{width:9px;height:9px;border-radius:50%;background:var(--color-border-secondary)}
+.wday.has-done .wday-dot{background:#1D9E75}
+.wday.today:not(.has-done) .wday-dot{background:#185FA5}
+
+.section-hdr{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--color-text-secondary);margin-bottom:8px}
+
+.blocks-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.blk{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);transition:all .15s}
+.blk.now{border-color:#1D9E75;background:#E1F5EE}
+.blk-icon{width:34px;height:34px;border-radius:var(--border-radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;background:var(--color-background-secondary)}
+.blk.now .blk-icon{background:#9FE1CB}
+.blk-body{flex:1}
+.blk-time{font-size:11px;color:var(--color-text-secondary);margin-bottom:1px}
+.blk.now .blk-time{color:#0F6E56}
+.blk-desc{font-size:13px;color:var(--color-text-primary);font-weight:400}
+.blk.now .blk-desc{color:#085041;font-weight:500}
+.now-chip{font-size:10px;font-weight:500;background:#1D9E75;color:#fff;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle}
+
+.tab-row{display:flex;gap:6px;margin-bottom:14px}
+.tab{font-size:13px;padding:7px 16px;border-radius:20px;border:0.5px solid var(--color-border-tertiary);cursor:pointer;background:transparent;color:var(--color-text-secondary);transition:all .15s}
+.tab.on{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
+.sec{display:none}
+.sec.show{display:block}
+
+.hist-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.hist-row:last-child{border:none}
+.hist-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.hist-date{font-size:12px;color:var(--color-text-secondary);min-width:52px}
+.hist-name{font-size:13px;color:var(--color-text-primary);flex:1}
+.hist-status{font-size:12px;font-weight:500}
+
+.notif-row{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--border-radius-lg);background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);cursor:pointer}
+.notif-row:hover{border-color:var(--color-border-secondary)}
+.notif-icon{width:34px;height:34px;border-radius:var(--border-radius-md);background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.notif-text{flex:1;font-size:13px;color:var(--color-text-primary)}
+.notif-sub{font-size:11px;color:var(--color-text-secondary);margin-top:1px}
+.notif-arrow{color:var(--color-text-secondary);font-size:16px}
+</style>
+
+<div class="app">
+
+  <div class="hero">
+    <div class="hero-left">
+      <div class="hero-greeting" id="greeting"></div>
+      <div class="hero-day" id="heroDay"></div>
+      <div class="hero-date" id="heroDate"></div>
+    </div>
+    <div class="hero-right">
+      <div class="streak-num" id="streakNum">0</div>
+      <div class="streak-label">hari beruntun 🔥</div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num" id="statWeek">0</div>
+      <div class="stat-lbl">minggu ini</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statMonth">0</div>
+      <div class="stat-lbl">bulan ini</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statTotal">0</div>
+      <div class="stat-lbl">total selesai</div>
+    </div>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab on" onclick="showTab('today',this)">Hari ini</button>
+    <button class="tab" onclick="showTab('week',this)">Minggu</button>
+    <button class="tab" onclick="showTab('history',this)">Riwayat</button>
+  </div>
+
+  <div class="sec show" id="sec-today">
+    <p class="section-hdr">45 menit wajib</p>
+    <div class="must-big" id="mustBig" onclick="toggleMust()">
+      <div class="must-accent"></div>
+      <div class="must-inner">
+        <div class="check-ring" id="checkRing">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M3.5 9L7.5 13L14.5 5.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="must-text">
+          <div class="must-title" id="mustTitle"></div>
+          <div class="must-sub">Setiap hari — 45 menit · 15.00–18.00</div>
+          <span class="must-badge-pill" id="mustPill"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="prog-wrap">
+      <div class="prog-header">
+        <span>Progress minggu ini</span>
+        <span id="progLabel">0 / 7</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    </div>
+
+    <p class="section-hdr">Blok waktu</p>
+    <div class="blocks-list" id="blocksList"></div>
+
+    <div class="notif-row" onclick="requestNotif()">
+      <div class="notif-icon">🔔</div>
+      <div class="notif-text">
+        <div id="notifTitle">Aktifkan pengingat harian</div>
+        <div class="notif-sub" id="notifSub">Notifikasi di 06.00, 09.00, 12.00, 15.00, 18.00</div>
+      </div>
+      <div class="notif-arrow">›</div>
+    </div>
+  </div>
+
+  <div class="sec" id="sec-week">
+    <p class="section-hdr">Status minggu ini</p>
+    <div class="week-strip" id="weekStrip"></div>
+    <div id="weekList"></div>
+  </div>
+
+  <div class="sec" id="sec-history">
+    <p class="section-hdr">14 hari terakhir</p>
+    <div id="histList"></div>
+  </div>
+
+</div>
+
+<script>
+const MUST={0:{name:'Dr. Yusuf Suseno',tag:'Mentoring',color:'#FAEEDA',tc:'#633806'},1:{name:'Pathoma',tag:'Patologi',color:'#EEEDFE',tc:'#3C3489'},2:{name:'ACLS',tag:'Kegawatan',color:'#FCEBEB',tc:'#791F1F'},3:{name:'Reading PPK',tag:'Panduan Klinis',color:'#E6F1FB',tc:'#0C447C'},4:{name:'Cardiology',tag:'Kardiologi',color:'#FCEBEB',tc:'#791F1F'},5:{name:'Ebook Reading',tag:'Literasi',color:'#EAF3DE',tc:'#27500A'},6:{name:'Reading IPD',tag:'Penyakit Dalam',color:'#E6F1FB',tc:'#0C447C'}};
+const BLOCKS=[{icon:'☀',time:'06.00 – 09.00',desc:'Siap-siap, membaca, mandi, olahraga, sarapan'},{icon:'💼',time:'09.00 – 12.00',desc:'Kerja'},{icon:'🛏',time:'12.00 – 15.00',desc:'Tidur siang'},{icon:'📖',time:'15.00 – 18.00',desc:'Olahraga, belajar 45 mnt wajib, ceklok'},{icon:'🌙',time:'18.00 – 24.00',desc:'Membaca, nonton, tidur'}];
+const BH=[[6,9],[9,12],[12,15],[15,18],[18,24]];
+const DN=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const DS=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+let S={};
+
+function fmtKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function todayKey(){return fmtKey(new Date())}
+
+async function load(){
+  try{const r=await window.storage.get('sched-v2');if(r)S=JSON.parse(r.value);}catch(e){S={};}
+  render();
+}
+async function save(){try{await window.storage.set('sched-v2',JSON.stringify(S));}catch(e){}}
+
+function activeBlock(){const h=new Date().getHours()+new Date().getMinutes()/60;return BH.findIndex(([s,e])=>h>=s&&h<e);}
+
+function weekDays(){
+  const t=new Date(),dow=t.getDay(),out=[];
+  for(let i=0;i<7;i++){const d=new Date(t);d.setDate(t.getDate()-dow+i);out.push({key:fmtKey(d),dow:i,d});}
+  return out;
+}
+
+function calcStreak(){
+  let s=0,d=new Date();
+  for(let i=0;i<90;i++){
+    if(S[fmtKey(d)])s++;
+    else if(i>0)break;
+    d.setDate(d.getDate()-1);
+  }
+  return s;
+}
+
+function calcMonth(){
+  const n=new Date(),m=n.getMonth(),y=n.getFullYear(),d=new Date(y,m,1);let c=0;
+  while(d.getMonth()===m&&d<=n){if(S[fmtKey(d)])c++;d.setDate(d.getDate()+1);}
+  return c;
+}
+
+function calcTotal(){return Object.keys(S).filter(k=>S[k]).length;}
+
+function greetText(){
+  const h=new Date().getHours();
+  if(h<11)return 'Selamat pagi';
+  if(h<15)return 'Selamat siang';
+  if(h<18)return 'Selamat sore';
+  return 'Selamat malam';
+}
+
+function render(){
+  const now=new Date(),dow=now.getDay(),tk=todayKey(),done=!!S[tk];
+  const must=MUST[dow];
+
+  document.getElementById('greeting').textContent=greetText()+'!';
+  document.getElementById('heroDay').textContent=DN[dow];
+  document.getElementById('heroDate').textContent=now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('streakNum').textContent=calcStreak();
+
+  const wd=weekDays(),wc=wd.filter(d=>S[d.key]).length;
+  document.getElementById('statWeek').textContent=wc;
+  document.getElementById('statMonth').textContent=calcMonth();
+  document.getElementById('statTotal').textContent=calcTotal();
+
+  const mt=document.getElementById('mustTitle');
+  mt.textContent=must.name;
+  document.getElementById('mustBig').className='must-big'+(done?' done':'');
+  document.getElementById('checkRing').className='check-ring'+(done?' on':'');
+  const mp=document.getElementById('mustPill');
+  mp.textContent=must.tag;
+  mp.style.background=must.color;mp.style.color=must.tc;
+
+  document.getElementById('progLabel').textContent=wc+' / 7';
+  document.getElementById('progFill').style.width=Math.round(wc/7*100)+'%';
+
+  const ab=activeBlock();
+  document.getElementById('blocksList').innerHTML=BLOCKS.map((b,i)=>{
+    const isNow=i===ab;
+    return `<div class="blk${isNow?' now':''}">
+      <div class="blk-icon">${b.icon}</div>
+      <div class="blk-body">
+        <div class="blk-time">${b.time}${isNow?'<span class="now-chip">sekarang</span>':''}</div>
+        <div class="blk-desc">${b.desc}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const ws=document.getElementById('weekStrip');
+  ws.innerHTML=wd.map(d=>{
+    const isToday=d.key===tk,isDone=!!S[d.key];
+    return `<div class="wday${isToday?' today':''}${isDone?' has-done':''}">
+      <div class="wday-lbl">${DS[d.dow]}</div>
+      <div class="wday-dot"></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('weekList').innerHTML=wd.map(d=>{
+    const m=MUST[d.dow],isDone=!!S[d.key],isToday=d.key===tk;
+    return `<div class="hist-row">
+      <div class="hist-dot" style="background:${isDone?'#1D9E75':'var(--color-border-secondary)'}"></div>
+      <div class="hist-date">${DS[d.dow]}${isToday?' (hari ini)':''}</div>
+      <div class="hist-name">${m.name}</div>
+      <div class="hist-status" style="color:${isDone?'#1D9E75':'var(--color-text-secondary)'}">${isDone?'Selesai':'–'}</div>
+    </div>`;
+  }).join('');
+
+  let hr='';
+  for(let i=0;i<14;i++){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const k=fmtKey(d),m=MUST[d.getDay()],isDone=!!S[k];
+    hr+=`<div class="hist-row">
+      <div class="hist-dot" style="background:${isDone?'#1D9E75':'var(--color-border-secondary)'}"></div>
+      <div class="hist-date">${d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</div>
+      <div class="hist-name">${m.name}</div>
+      <div class="hist-status" style="color:${isDone?'#1D9E75':'var(--color-text-secondary)'}">${isDone?'✓ Selesai':'–'}</div>
+    </div>`;
+  }
+  document.getElementById('histList').innerHTML=hr;
+
+  if(Notification&&Notification.permission==='granted'){
+    document.getElementById('notifTitle').textContent='Pengingat aktif';
+    document.getElementById('notifSub').textContent='Notifikasi sudah diaktifkan';
+  }
+}
+
+async function toggleMust(){
+  const tk=todayKey();
+  if(S[tk])delete S[tk];else S[tk]=true;
+  await save();render();
+}
+
+function showTab(id,el){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('show'));
+  document.getElementById('sec-'+id).classList.add('show');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function requestNotif(){
+  if(!('Notification' in window)){alert('Browser kamu tidak mendukung notifikasi.');return;}
+  Notification.requestPermission().then(p=>{
+    if(p==='granted'){scheduleNotifs();render();}
+  });
+}
+function scheduleNotifs(){
+  const msgs=[[6,0,'Selamat pagi! Waktunya siap-siap dan olahraga.'],[9,0,'Jam kerja dimulai. Semangat!'],[12,0,'Istirahat siang, saatnya tidur.'],[15,0,'Waktunya belajar 45 menit wajib!'],[18,0,'Selamat malam! Sudah selesai belajar hari ini?']];
+  const now=new Date();
+  msgs.forEach(([h,m,msg])=>{
+    const t=new Date(now);t.setHours(h,m,0,0);
+    if(t>now)setTimeout(()=>new Notification('Jadwal Harian',{body:msg}),t-now);
+  });
+}
+if(Notification&&Notification.permission==='granted')scheduleNotifs();
+load();
+setInterval(render,60000);
+</script>
