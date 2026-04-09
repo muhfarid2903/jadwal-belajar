@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#111111">
-<title>Jadwal Belajar</title>
+<title>Jadwal Belajar / Study Schedule</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -19,26 +19,42 @@ html,body{
 }
 :root{
   --y:#F5E642;--yd:#C9BC1A;
-  --bg:#111;--s1:#1A1A1A;--s2:#222;--bd:#2A2A2A;
+  --s1:#1A1A1A;--s2:#222;--bd:#2A2A2A;
   --mt:#F0EFE8;--mu:#666;
 }
 .app{max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:48px}
 
-/* TOP */
+/* TOP BAR */
 .topbar{
   padding:calc(env(safe-area-inset-top,0px) + 20px) 20px 0;
-  display:flex;justify-content:space-between;align-items:flex-start;
   margin-bottom:22px;
 }
+.toprow{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0}
 .greet{font-size:12px;color:var(--mu);letter-spacing:.1em;margin-bottom:6px;font-family:'Space Mono',monospace;font-weight:700}
 .dayname{font-size:38px;font-weight:700;color:var(--mt);letter-spacing:-2px;line-height:.95}
 .datestr{font-size:11px;color:var(--mu);margin-top:8px;font-family:'Space Mono',monospace;letter-spacing:.05em}
-.spill{background:var(--y);border-radius:16px;padding:12px 16px;text-align:center;min-width:80px}
-.snum{font-size:36px;font-weight:700;color:#111;line-height:1;font-family:'Space Mono',monospace}
+
+/* STREAK + LANG ROW */
+.right-col{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.spill{background:var(--y);border-radius:16px;padding:12px 16px;text-align:center;min-width:78px}
+.snum{font-size:34px;font-weight:700;color:#111;line-height:1;font-family:'Space Mono',monospace}
 .slbl{font-size:10px;color:rgba(0,0,0,.55);margin-top:3px;font-weight:700;letter-spacing:.08em}
 
+/* LANG TOGGLE */
+.lang-toggle{
+  display:flex;background:var(--s2);border-radius:10px;
+  border:1px solid var(--bd);overflow:hidden;
+}
+.ltab{
+  font-size:12px;font-weight:700;padding:7px 12px;
+  border:none;cursor:pointer;background:transparent;
+  color:var(--mu);transition:all .18s;font-family:'Space Mono',monospace;
+  letter-spacing:.06em;
+}
+.ltab.on{background:var(--y);color:#111;}
+
 /* STATS */
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 20px;margin-bottom:24px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 20px;margin-bottom:24px;margin-top:20px}
 .sc{background:var(--s1);border-radius:14px;padding:14px 8px;text-align:center;border:1px solid var(--bd)}
 .scn{font-size:28px;font-weight:700;color:var(--y);font-family:'Space Mono',monospace}
 .scl{font-size:11px;color:var(--mu);margin-top:3px;font-weight:600;letter-spacing:.04em}
@@ -56,8 +72,7 @@ html,body{
 
 /* CONTENT */
 .px{padding:0 20px}
-.sec{display:none}
-.sec.show{display:block}
+.sec{display:none}.sec.show{display:block}
 .slabel{
   font-size:11px;font-weight:700;text-transform:uppercase;
   letter-spacing:.12em;color:var(--mu);
@@ -71,8 +86,7 @@ html,body{
   background:var(--s1);border-radius:18px;
   padding:20px 18px;display:flex;align-items:center;gap:16px;
   border:1px solid var(--bd);cursor:pointer;
-  transition:border-color .2s,transform .12s;
-  margin-bottom:12px;
+  transition:border-color .2s,transform .12s;margin-bottom:12px;
 }
 .mcard:active{transform:scale(.975)}
 .mcard.ready{border-color:var(--y)}
@@ -125,7 +139,7 @@ html,body{
 .bbd2{font-size:14px;font-weight:600;color:var(--mt)}
 .nchip{font-size:10px;font-weight:700;background:var(--y);color:#111;padding:2px 8px;border-radius:5px;margin-left:6px;vertical-align:middle;font-family:'Space Mono',monospace;letter-spacing:.06em}
 
-/* NOTIF BTN */
+/* NOTIF */
 .nbtn{
   display:flex;align-items:center;gap:14px;
   padding:16px;background:var(--s1);border-radius:14px;
@@ -144,7 +158,7 @@ html,body{
 .ritem{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--bd)}
 .ritem:last-child{border:none}
 .rdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.rdate{font-size:12px;color:var(--mu);min-width:52px;font-family:'Space Mono',monospace;font-weight:700;letter-spacing:.03em}
+.rdate{font-size:12px;color:var(--mu);min-width:52px;font-family:'Space Mono',monospace;font-weight:700}
 .rname{font-size:14px;font-weight:600;color:var(--mt);flex:1}
 .rok{font-size:13px;font-weight:700;font-family:'Space Mono',monospace}
 </style>
@@ -153,31 +167,39 @@ html,body{
 <div class="app">
 
   <div class="topbar">
-    <div>
-      <div class="greet" id="greet"></div>
-      <div class="dayname" id="dayname"></div>
-      <div class="datestr" id="datestr"></div>
-    </div>
-    <div class="spill">
-      <div class="snum" id="stn">0</div>
-      <div class="slbl">HARI 🔥</div>
+    <div class="toprow">
+      <div>
+        <div class="greet" id="greet"></div>
+        <div class="dayname" id="dayname"></div>
+        <div class="datestr" id="datestr"></div>
+      </div>
+      <div class="right-col">
+        <div class="spill">
+          <div class="snum" id="stn">0</div>
+          <div class="slbl" id="slbl-streak">HARI 🔥</div>
+        </div>
+        <div class="lang-toggle">
+          <button class="ltab on" id="lt-id" onclick="setLang('id')">ID</button>
+          <button class="ltab" id="lt-en" onclick="setLang('en')">EN</button>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="stats">
-    <div class="sc"><div class="scn" id="sw">0</div><div class="scl">minggu ini</div></div>
-    <div class="sc"><div class="scn" id="sm">0</div><div class="scl">bulan ini</div></div>
-    <div class="sc"><div class="scn" id="stot">0</div><div class="scl">total</div></div>
+    <div class="sc"><div class="scn" id="sw">0</div><div class="scl" id="lbl-week">minggu ini</div></div>
+    <div class="sc"><div class="scn" id="sm">0</div><div class="scl" id="lbl-month">bulan ini</div></div>
+    <div class="sc"><div class="scn" id="stot">0</div><div class="scl" id="lbl-total">total</div></div>
   </div>
 
   <div class="tabs">
-    <button class="tab on" onclick="showTab('today',this)">Hari ini</button>
-    <button class="tab" onclick="showTab('week',this)">Minggu</button>
-    <button class="tab" onclick="showTab('hist',this)">Riwayat</button>
+    <button class="tab on" id="tab-today" onclick="showTab('today',this)"></button>
+    <button class="tab" id="tab-week" onclick="showTab('week',this)"></button>
+    <button class="tab" id="tab-hist" onclick="showTab('hist',this)"></button>
   </div>
 
   <div class="px sec show" id="sec-today">
-    <div class="slabel">45 menit wajib</div>
+    <div class="slabel" id="lbl-must45"></div>
 
     <div class="mcard ready" id="mc" onclick="toggleMust()">
       <div class="cbtn" id="cb">
@@ -187,7 +209,7 @@ html,body{
       </div>
       <div class="mbody">
         <div class="mname" id="mn"></div>
-        <div class="msub">45 mnt · 15.00–18.00</div>
+        <div class="msub" id="msub"></div>
         <span class="mpill" id="mp"></span>
       </div>
       <div class="marr">›</div>
@@ -195,19 +217,19 @@ html,body{
 
     <div class="pcard">
       <div class="prow">
-        <div class="ptitle">Progress minggu ini</div>
+        <div class="ptitle" id="lbl-progress"></div>
         <div class="pval" id="pv">0/7</div>
       </div>
       <div class="ptrack"><div class="pfill" id="pf" style="width:0%"></div></div>
     </div>
 
-    <div class="slabel">Blok waktu</div>
+    <div class="slabel" id="lbl-blocks"></div>
     <div class="blist" id="blks"></div>
 
     <button class="nbtn" onclick="doNotif()">
       <div class="nico">🔔</div>
       <div class="nbd">
-        <div class="ntitle" id="nt">Aktifkan pengingat harian</div>
+        <div class="ntitle" id="nt"></div>
         <div class="nsub">06.00 · 09.00 · 12.00 · 15.00 · 18.00</div>
       </div>
       <div class="narr">›</div>
@@ -215,121 +237,208 @@ html,body{
   </div>
 
   <div class="px sec" id="sec-week">
-    <div class="slabel">Minggu ini</div>
+    <div class="slabel" id="lbl-thisweek"></div>
     <div class="wstrip" id="wr"></div>
     <div class="lcard" id="wlist"></div>
   </div>
 
   <div class="px sec" id="sec-hist">
-    <div class="slabel">14 hari terakhir</div>
+    <div class="slabel" id="lbl-history"></div>
     <div class="lcard" id="hlist"></div>
   </div>
 
 </div>
 
 <script>
+/* ── DATA ── */
 const MUST={
-  0:{n:'Dr. Yusuf Suseno',t:'MENTORING',bg:'rgba(245,166,35,.18)',tc:'#F5A623'},
-  1:{n:'Pathoma',t:'PATOLOGI',bg:'rgba(155,114,207,.18)',tc:'#B89EE8'},
-  2:{n:'ACLS',t:'KEGAWATAN',bg:'rgba(232,83,58,.18)',tc:'#E8765A'},
-  3:{n:'Reading PPK',t:'PANDUAN KLINIS',bg:'rgba(91,141,239,.18)',tc:'#7AAAF5'},
-  4:{n:'Cardiology',t:'KARDIOLOGI',bg:'rgba(232,83,58,.18)',tc:'#E8765A'},
-  5:{n:'Ebook Reading',t:'LITERASI',bg:'rgba(78,205,196,.18)',tc:'#4ECDC4'},
-  6:{n:'Reading IPD',t:'PENYAKIT DALAM',bg:'rgba(91,141,239,.18)',tc:'#7AAAF5'}
+  0:{n:'Dr. Yusuf Suseno',t:{id:'MENTORING',en:'MENTORING'},bg:'rgba(245,166,35,.18)',tc:'#F5A623'},
+  1:{n:'Pathoma',t:{id:'PATOLOGI',en:'PATHOLOGY'},bg:'rgba(155,114,207,.18)',tc:'#B89EE8'},
+  2:{n:'ACLS',t:{id:'KEGAWATAN',en:'EMERGENCY'},bg:'rgba(232,83,58,.18)',tc:'#E8765A'},
+  3:{n:'Reading PPK',t:{id:'PANDUAN KLINIS',en:'CLINICAL GUIDE'},bg:'rgba(91,141,239,.18)',tc:'#7AAAF5'},
+  4:{n:'Cardiology',t:{id:'KARDIOLOGI',en:'CARDIOLOGY'},bg:'rgba(232,83,58,.18)',tc:'#E8765A'},
+  5:{n:'Ebook Reading',t:{id:'LITERASI',en:'LITERACY'},bg:'rgba(78,205,196,.18)',tc:'#4ECDC4'},
+  6:{n:'Reading IPD',t:{id:'PENYAKIT DALAM',en:'INTERNAL MED'},bg:'rgba(91,141,239,.18)',tc:'#7AAAF5'}
 };
 const BLK=[
-  {e:'☀️',t:'06.00 – 09.00',d:'Siap-siap, membaca, mandi, olahraga, sarapan'},
-  {e:'💼',t:'09.00 – 12.00',d:'Kerja'},
-  {e:'🛌',t:'12.00 – 15.00',d:'Tidur siang'},
-  {e:'📖',t:'15.00 – 18.00',d:'Olahraga, belajar 45 mnt wajib, ceklok'},
-  {e:'🌙',t:'18.00 – 24.00',d:'Membaca, nonton, tidur'}
+  {e:'☀️',t:'06.00–09.00',id:'Siap-siap, membaca, mandi, olahraga, sarapan',en:'Morning prep, reading, shower, exercise, breakfast'},
+  {e:'💼',t:'09.00–12.00',id:'Kerja',en:'Work'},
+  {e:'🛌',t:'12.00–15.00',id:'Tidur siang',en:'Afternoon nap'},
+  {e:'📖',t:'15.00–18.00',id:'Olahraga, belajar 45 mnt wajib, ceklok',en:'Exercise, 45-min study, check out'},
+  {e:'🌙',t:'18.00–24.00',id:'Membaca, nonton, tidur',en:'Reading, watching, sleep'}
 ];
 const BH=[[6,9],[9,12],[12,15],[15,18],[18,24]];
-const DN=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-const DS=['MIN','SEN','SEL','RAB','KAM','JUM','SAB'];
 
+const DN={id:['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],en:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']};
+const DS={id:['MIN','SEN','SEL','RAB','KAM','JUM','SAB'],en:['SUN','MON','TUE','WED','THU','FRI','SAT']};
+
+const T={
+  id:{
+    greet:['SELAMAT PAGI','SELAMAT SIANG','SELAMAT SORE','SELAMAT MALAM'],
+    streak:'HARI 🔥',
+    week:'minggu ini',month:'bulan ini',total:'total',
+    tab1:'Hari ini',tab2:'Minggu',tab3:'Riwayat',
+    must45:'45 menit wajib',
+    msub:'45 mnt · 15.00–18.00',
+    progress:'Progress minggu ini',
+    blocks:'Blok waktu',
+    thisweek:'Minggu ini',
+    history:'14 hari terakhir',
+    notifOn:'Aktifkan pengingat harian',
+    notifActive:'Pengingat aktif ✓',
+    done:'Selesai',notdone:'Belum',
+    now:'SEKARANG',
+    today:'hari ini',
+    notifMsgs:['Selamat pagi! Waktunya siap-siap.','Jam kerja dimulai. Semangat!','Istirahat siang, waktunya tidur.','Waktunya belajar 45 menit wajib!','Sudah selesai belajar hari ini?'],
+    notifTitle:'Jadwal Belajar',
+  },
+  en:{
+    greet:['GOOD MORNING','GOOD AFTERNOON','GOOD AFTERNOON','GOOD EVENING'],
+    streak:'DAY STREAK 🔥',
+    week:'this week',month:'this month',total:'total',
+    tab1:'Today',tab2:'Week',tab3:'History',
+    must45:'45-min must-do',
+    msub:'45 min · 15:00–18:00',
+    progress:'This week\'s progress',
+    blocks:'Time blocks',
+    thisweek:'This week',
+    history:'Last 14 days',
+    notifOn:'Enable daily reminders',
+    notifActive:'Reminders active ✓',
+    done:'Done',notdone:'Pending',
+    now:'NOW',
+    today:'today',
+    notifMsgs:['Good morning! Time to get ready.','Work time. Let\'s go!','Afternoon rest, time to nap.','Time for your 45-min study!','Did you finish studying today?'],
+    notifTitle:'Study Schedule',
+  }
+};
+
+/* ── STATE ── */
 function fk(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function tk(){return fk(new Date())}
-function load(){try{const r=localStorage.getItem('jadwal-v2');return r?JSON.parse(r):{};}catch(e){return {};}}
-function save(S){try{localStorage.setItem('jadwal-v2',JSON.stringify(S));}catch(e){}}
-let S=load();
+function load(){try{const r=localStorage.getItem('jadwal-v3');return r?JSON.parse(r):{data:{},lang:'id'};}catch(e){return {data:{},lang:'id'};}}
+function save(){try{localStorage.setItem('jadwal-v3',JSON.stringify(STATE));}catch(e){}}
 
+let STATE=load();
+if(!STATE.data)STATE={data:{},lang:'id'};
+let L=STATE.lang||'id';
+
+/* ── HELPERS ── */
 function abk(){const h=new Date().getHours()+new Date().getMinutes()/60;return BH.findIndex(([s,e])=>h>=s&&h<e);}
 function wdays(){const t=new Date(),dw=t.getDay(),a=[];for(let i=0;i<7;i++){const d=new Date(t);d.setDate(t.getDate()-dw+i);a.push({key:fk(d),dw:i});}return a;}
-function streak(){let s=0,d=new Date();for(let i=0;i<90;i++){if(S[fk(d)])s++;else if(i>0)break;d.setDate(d.getDate()-1);}return s;}
-function cMonth(){const n=new Date(),d=new Date(n.getFullYear(),n.getMonth(),1);let c=0;while(d.getMonth()===n.getMonth()&&d<=n){if(S[fk(d)])c++;d.setDate(d.getDate()+1);}return c;}
-function cTotal(){return Object.keys(S).filter(k=>S[k]).length;}
-function greet(){const h=new Date().getHours();return h<11?'SELAMAT PAGI':h<15?'SELAMAT SIANG':h<18?'SELAMAT SORE':'SELAMAT MALAM';}
+function streak(){let s=0,d=new Date();for(let i=0;i<90;i++){if(STATE.data[fk(d)])s++;else if(i>0)break;d.setDate(d.getDate()-1);}return s;}
+function cMonth(){const n=new Date(),d=new Date(n.getFullYear(),n.getMonth(),1);let c=0;while(d.getMonth()===n.getMonth()&&d<=n){if(STATE.data[fk(d)])c++;d.setDate(d.getDate()+1);}return c;}
+function cTotal(){return Object.keys(STATE.data).filter(k=>STATE.data[k]).length;}
+function greet(){const h=new Date().getHours();const i=h<11?0:h<14?1:h<18?2:3;return T[L].greet[i];}
 
+/* ── RENDER ── */
 function render(){
-  const now=new Date(),dw=now.getDay(),key=tk(),done=!!S[key],mu=MUST[dw];
-  document.getElementById('greet').textContent=greet();
-  document.getElementById('dayname').textContent=DN[dw];
-  document.getElementById('datestr').textContent=now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}).toUpperCase();
-  document.getElementById('stn').textContent=streak();
+  const now=new Date(),dw=now.getDay(),key=tk(),done=!!STATE.data[key],mu=MUST[dw];
+  const tx=T[L];
 
-  const wd=wdays(),wc=wd.filter(d=>S[d.key]).length;
+  /* header */
+  document.getElementById('greet').textContent=greet();
+  document.getElementById('dayname').textContent=DN[L][dw];
+  document.getElementById('datestr').textContent=now.toLocaleDateString(L==='id'?'id-ID':'en-GB',{day:'numeric',month:'long',year:'numeric'}).toUpperCase();
+  document.getElementById('stn').textContent=streak();
+  document.getElementById('slbl-streak').textContent=tx.streak;
+
+  /* lang toggle */
+  document.getElementById('lt-id').className='ltab'+(L==='id'?' on':'');
+  document.getElementById('lt-en').className='ltab'+(L==='en'?' on':'');
+
+  /* stats labels */
+  document.getElementById('lbl-week').textContent=tx.week;
+  document.getElementById('lbl-month').textContent=tx.month;
+  document.getElementById('lbl-total').textContent=tx.total;
+
+  /* stats values */
+  const wd=wdays(),wc=wd.filter(d=>STATE.data[d.key]).length;
   document.getElementById('sw').textContent=wc;
   document.getElementById('sm').textContent=cMonth();
   document.getElementById('stot').textContent=cTotal();
 
+  /* tabs */
+  document.getElementById('tab-today').textContent=tx.tab1;
+  document.getElementById('tab-week').textContent=tx.tab2;
+  document.getElementById('tab-hist').textContent=tx.tab3;
+
+  /* must */
+  document.getElementById('lbl-must45').textContent=tx.must45;
   document.getElementById('mn').textContent=mu.n;
-  const mp=document.getElementById('mp');mp.textContent=mu.t;mp.style.background=mu.bg;mp.style.color=mu.tc;
+  document.getElementById('msub').textContent=tx.msub;
+  const mp=document.getElementById('mp');mp.textContent=mu.t[L];mp.style.background=mu.bg;mp.style.color=mu.tc;
   document.getElementById('mc').className='mcard'+(done?' done':' ready');
   document.getElementById('cb').className='cbtn'+(done?' on':'');
+
+  /* progress */
+  document.getElementById('lbl-progress').textContent=tx.progress;
   document.getElementById('pv').textContent=wc+'/7';
   document.getElementById('pf').style.width=Math.round(wc/7*100)+'%';
 
+  /* blocks */
+  document.getElementById('lbl-blocks').textContent=tx.blocks;
   const ab=abk();
   document.getElementById('blks').innerHTML=BLK.map((b,i)=>{
     const isN=i===ab;
-    return`<div class="blk${isN?' now':''}"><div class="bico">${b.e}</div><div class="bbd"><div class="bbt">${b.t}${isN?'<span class="nchip">NOW</span>':''}</div><div class="bbd2">${b.d}</div></div></div>`;
+    return`<div class="blk${isN?' now':''}"><div class="bico">${b.e}</div><div class="bbd"><div class="bbt">${b.t}${isN?`<span class="nchip">${tx.now}</span>`:''}</div><div class="bbd2">${b[L]}</div></div></div>`;
   }).join('');
 
+  /* notif */
+  document.getElementById('nt').textContent=
+    (typeof Notification!=='undefined'&&Notification.permission==='granted')?tx.notifActive:tx.notifOn;
+
+  /* week tab */
+  document.getElementById('lbl-thisweek').textContent=tx.thisweek;
   document.getElementById('wr').innerHTML=wd.map(d=>{
-    const isT=d.key===key,isDone=!!S[d.key];
-    return`<div class="wd${isT?' today':isDone?' donew':''}"><span class="wdl">${DS[d.dw]}</span><div class="wdot"></div></div>`;
+    const isT=d.key===key,isDone=!!STATE.data[d.key];
+    return`<div class="wd${isT?' today':isDone?' donew':''}"><span class="wdl">${DS[L][d.dw]}</span><div class="wdot"></div></div>`;
   }).join('');
-
   document.getElementById('wlist').innerHTML=wd.map(d=>{
-    const mu=MUST[d.dw],isDone=!!S[d.key],isT=d.key===key;
-    return`<div class="ritem"><div class="rdot" style="background:${isDone?'#F5E642':'#2A2A2A'}"></div><div class="rdate">${DS[d.dw]}${isT?' •':''}</div><div class="rname">${mu.n}</div><div class="rok" style="color:${isDone?'#F5E642':'#333'}">${isDone?'✓':'–'}</div></div>`;
+    const mu2=MUST[d.dw],isDone=!!STATE.data[d.key],isT=d.key===key;
+    return`<div class="ritem"><div class="rdot" style="background:${isDone?'#F5E642':'#2A2A2A'}"></div><div class="rdate">${DS[L][d.dw]}${isT?' •':''}</div><div class="rname">${mu2.n}</div><div class="rok" style="color:${isDone?'#F5E642':'#333'}">${isDone?'✓':'–'}</div></div>`;
   }).join('');
 
+  /* history tab */
+  document.getElementById('lbl-history').textContent=tx.history;
   let hr='';
   for(let i=0;i<14;i++){
     const d=new Date();d.setDate(d.getDate()-i);
-    const k=fk(d),mu=MUST[d.getDay()],isDone=!!S[k];
-    hr+=`<div class="ritem"><div class="rdot" style="background:${isDone?'#F5E642':'#2A2A2A'}"></div><div class="rdate">${d.toLocaleDateString('id-ID',{day:'numeric',month:'short'}).toUpperCase()}</div><div class="rname">${mu.n}</div><div class="rok" style="color:${isDone?'#F5E642':'#333'}">${isDone?'✓':'–'}</div></div>`;
+    const k=fk(d),mu2=MUST[d.getDay()],isDone=!!STATE.data[k];
+    const dstr=d.toLocaleDateString(L==='id'?'id-ID':'en-GB',{day:'numeric',month:'short'}).toUpperCase();
+    hr+=`<div class="ritem"><div class="rdot" style="background:${isDone?'#F5E642':'#2A2A2A'}"></div><div class="rdate">${dstr}</div><div class="rname">${mu2.n}</div><div class="rok" style="color:${isDone?'#F5E642':'#333'}">${isDone?'✓':'–'}</div></div>`;
   }
   document.getElementById('hlist').innerHTML=hr;
-
-  if(typeof Notification!=='undefined'&&Notification.permission==='granted')
-    document.getElementById('nt').textContent='Pengingat aktif ✓';
 }
 
-function toggleMust(){const k=tk();if(S[k])delete S[k];else S[k]=true;save(S);render();}
+/* ── ACTIONS ── */
+function toggleMust(){
+  const k=tk();if(STATE.data[k])delete STATE.data[k];else STATE.data[k]=true;
+  save();render();
+}
 function showTab(id,el){
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('show'));
   document.getElementById('sec-'+id).classList.add('show');
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   el.classList.add('on');
 }
+function setLang(l){
+  L=l;STATE.lang=l;save();render();
+}
 function doNotif(){
-  if(!('Notification' in window)){alert('Browser tidak mendukung notifikasi.');return;}
+  if(!('Notification' in window)){alert(L==='id'?'Browser tidak mendukung notifikasi.':'Your browser does not support notifications.');return;}
   Notification.requestPermission().then(p=>{
-    if(p==='granted'){
-      [[6,0,'Selamat pagi! Waktunya siap-siap dan olahraga.'],[9,0,'Jam kerja dimulai. Semangat!'],[12,0,'Istirahat siang, waktunya tidur.'],[15,0,'Bangun! Waktunya belajar 45 menit wajib.'],[18,0,'Jangan lupa cek sudah selesai belajar hari ini?']].forEach(([h,m,msg])=>{
-        const t=new Date();t.setHours(h,m,0,0);
-        if(t>new Date())setTimeout(()=>new Notification('Jadwal Belajar',{body:msg}),t-new Date());
-      });
-      render();
-    }
+    if(p==='granted'){scheduleNotifs();render();}
   });
 }
-if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
-  [[6,0,'Waktunya siap-siap!'],[9,0,'Jam kerja!'],[12,0,'Tidur siang.'],[15,0,'Belajar 45 mnt!'],[18,0,'Selamat malam!']].forEach(([h,m,msg])=>{const t=new Date();t.setHours(h,m,0,0);if(t>new Date())setTimeout(()=>new Notification('Jadwal Belajar',{body:msg}),t-new Date());});
+function scheduleNotifs(){
+  const msgs=T[L].notifMsgs,title=T[L].notifTitle;
+  [6,9,12,15,18].forEach((h,i)=>{
+    const t=new Date();t.setHours(h,0,0,0);
+    if(t>new Date())setTimeout(()=>new Notification(title,{body:msgs[i]}),t-new Date());
+  });
 }
+if(typeof Notification!=='undefined'&&Notification.permission==='granted')scheduleNotifs();
 render();
 setInterval(render,60000);
 </script>
