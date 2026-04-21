@@ -11,6 +11,8 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <title>Jadwal Belajar / Study Schedule</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -158,6 +160,26 @@ html,body{
 .nsub{font-size:12px;color:var(--mu);margin-top:2px;font-family:'Space Mono',monospace}
 .narr{font-size:22px;color:var(--bd)}
 
+/* AUTH */
+.authbtn{
+  display:flex;align-items:center;gap:10px;
+  background:var(--s1);border:1px solid var(--bd);
+  border-radius:10px;padding:7px 12px;cursor:pointer;
+  color:var(--mt);font-family:'Space Mono',monospace;
+  font-size:11px;font-weight:700;letter-spacing:.04em;
+  transition:border-color .2s;
+}
+.authbtn:active{border-color:var(--y)}
+.authbtn.signed{background:rgba(245,230,66,.06);border-color:rgba(245,230,66,.25)}
+.auth-av{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--y);color:#111;display:flex;
+  align-items:center;justify-content:center;
+  font-weight:700;font-size:11px;flex-shrink:0;
+  background-size:cover;background-position:center;
+}
+.auth-tx{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 /* LIST */
 .lcard{background:var(--s1);border-radius:14px;border:1px solid var(--bd);padding:0 16px;margin-bottom:12px}
 .ritem{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--bd)}
@@ -187,6 +209,10 @@ html,body{
           <button class="ltab on" id="lt-id" onclick="setLang('id')">ID</button>
           <button class="ltab" id="lt-en" onclick="setLang('en')">EN</button>
         </div>
+        <button class="authbtn" id="authbtn" onclick="doAuth()">
+          <div class="auth-av" id="auth-av">?</div>
+          <div class="auth-tx" id="auth-tx">SIGN IN</div>
+        </button>
       </div>
     </div>
   </div>
@@ -322,11 +348,13 @@ const T={
 function fk(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function tk(){return fk(new Date())}
 function load(){try{const r=localStorage.getItem('jadwal-v3');return r?JSON.parse(r):{data:{},lang:'id'};}catch(e){return {data:{},lang:'id'};}}
-function save(){try{localStorage.setItem('jadwal-v3',JSON.stringify(STATE));}catch(e){}}
+function saveLocal(){try{localStorage.setItem('jadwal-v3',JSON.stringify(STATE));}catch(e){}}
+function save(){saveLocal();cloudSave();}
 
 let STATE=load();
 if(!STATE.data)STATE={data:{},lang:'id'};
 let L=STATE.lang||'id';
+let currentUser=null,fsUnsub=null,fsSkipNext=false;
 
 /* ── HELPERS ── */
 function abk(){const h=new Date().getHours()+new Date().getMinutes()/60;return BH.findIndex(([s,e])=>h>=s&&h<e);}
@@ -428,9 +456,9 @@ function showTab(id,el){
   el.classList.add('on');
 }
 function setLang(l){
-  L=l;STATE.lang=l;save();render();
+  L=l;STATE.lang=l;save();render();renderAuth();
 }
-/* ── FIREBASE FCM ── */
+/* ── FIREBASE ── */
 const FB_CONFIG={
   apiKey:"AIzaSyB3Gu4o9BiL3i9Gi9dLGvGF0yxcCmXXp80",
   authDomain:"jadwal-belajar-11785.firebaseapp.com",
@@ -440,8 +468,81 @@ const FB_CONFIG={
   appId:"1:899989543339:web:c81bc363fb3d8501e01aee"
 };
 const VAPID_KEY="BLK0sgKT9A9Ub3wRDyFUI84mMLISczpI7aThvzTVWBVGXi_HbG8yb1dxDO1g-tzhrN-UlHYW68o_SgETA9gXF-s";
-let fbMessaging=null;
-try{firebase.initializeApp(FB_CONFIG);fbMessaging=firebase.messaging();}catch(e){}
+let fbMessaging=null,fbAuth=null,fbDb=null;
+try{
+  firebase.initializeApp(FB_CONFIG);
+  fbMessaging=firebase.messaging();
+  fbAuth=firebase.auth();
+  fbDb=firebase.firestore();
+}catch(e){console.warn('Firebase init:',e);}
+
+/* ── AUTH + SYNC ── */
+function doAuth(){
+  if(!fbAuth){alert('Firebase belum ter-load.');return;}
+  if(currentUser){
+    if(confirm(L==='id'?'Keluar dari akun?':'Sign out?'))fbAuth.signOut();
+  }else{
+    const p=new firebase.auth.GoogleAuthProvider();
+    fbAuth.signInWithPopup(p).catch(e=>{
+      if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'){
+        fbAuth.signInWithRedirect(p);
+      }else alert('Sign in error: '+e.message);
+    });
+  }
+}
+
+function renderAuth(){
+  const btn=document.getElementById('authbtn'),av=document.getElementById('auth-av'),tx=document.getElementById('auth-tx');
+  if(currentUser){
+    btn.classList.add('signed');
+    tx.textContent=(currentUser.displayName||currentUser.email||'').toUpperCase();
+    if(currentUser.photoURL){av.style.backgroundImage='url('+currentUser.photoURL+')';av.textContent='';}
+    else{av.style.backgroundImage='';av.textContent=(currentUser.displayName||currentUser.email||'?').charAt(0).toUpperCase();}
+  }else{
+    btn.classList.remove('signed');
+    tx.textContent=L==='id'?'MASUK':'SIGN IN';
+    av.style.backgroundImage='';av.textContent='?';
+  }
+}
+
+function cloudSave(){
+  if(!currentUser||!fbDb)return;
+  fsSkipNext=true;
+  fbDb.collection('users').doc(currentUser.uid).set({
+    data:STATE.data||{},
+    lang:STATE.lang||'id',
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  },{merge:true}).catch(e=>console.warn('cloudSave:',e));
+}
+
+function startSync(){
+  if(!currentUser||!fbDb)return;
+  if(fsUnsub)fsUnsub();
+  const ref=fbDb.collection('users').doc(currentUser.uid);
+  fsUnsub=ref.onSnapshot(snap=>{
+    if(fsSkipNext){fsSkipNext=false;return;}
+    if(!snap.exists){
+      ref.set({data:STATE.data||{},lang:STATE.lang||'id'},{merge:true});
+      return;
+    }
+    const d=snap.data();
+    const merged={...(STATE.data||{}),...(d.data||{})};
+    STATE.data=merged;
+    if(d.lang){STATE.lang=d.lang;L=d.lang;}
+    saveLocal();render();
+  },e=>console.warn('onSnapshot:',e));
+}
+
+function stopSync(){if(fsUnsub){fsUnsub();fsUnsub=null;}}
+
+if(fbAuth){
+  fbAuth.onAuthStateChanged(u=>{
+    currentUser=u;
+    renderAuth();
+    if(u)startSync();else stopSync();
+  });
+  fbAuth.getRedirectResult().catch(e=>console.warn('redirect:',e));
+}
 
 function showToken(tok){
   const w=document.createElement('div');
