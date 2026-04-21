@@ -512,24 +512,37 @@ function cloudSave(){
     data:STATE.data||{},
     lang:STATE.lang||'id',
     updatedAt:firebase.firestore.FieldValue.serverTimestamp()
-  },{merge:true}).catch(e=>console.warn('cloudSave:',e));
+  }).catch(e=>console.warn('cloudSave:',e));
 }
 
+let firstSync=true;
 function startSync(){
   if(!currentUser||!fbDb)return;
   if(fsUnsub)fsUnsub();
+  firstSync=true;
   const ref=fbDb.collection('users').doc(currentUser.uid);
   fsUnsub=ref.onSnapshot(snap=>{
     if(fsSkipNext){fsSkipNext=false;return;}
     if(!snap.exists){
-      ref.set({data:STATE.data||{},lang:STATE.lang||'id'},{merge:true});
-      return;
+      firstSync=false;cloudSave();return;
     }
     const d=snap.data();
-    const merged={...(STATE.data||{}),...(d.data||{})};
-    STATE.data=merged;
+    const sData=d.data||{};
+    if(firstSync){
+      firstSync=false;
+      const lData=STATE.data||{};
+      const localOnly=Object.keys(lData).filter(k=>!(k in sData));
+      if(localOnly.length){
+        STATE.data={...sData,...lData};
+        if(d.lang){STATE.lang=d.lang;L=d.lang;}
+        saveLocal();render();renderAuth();
+        cloudSave();
+        return;
+      }
+    }
+    STATE.data=sData;
     if(d.lang){STATE.lang=d.lang;L=d.lang;}
-    saveLocal();render();
+    saveLocal();render();renderAuth();
   },e=>console.warn('onSnapshot:',e));
 }
 
