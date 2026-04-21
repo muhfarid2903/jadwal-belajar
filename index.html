@@ -6,6 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#111111">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>Jadwal Belajar / Study Schedule</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -427,18 +430,33 @@ function setLang(l){
 }
 function doNotif(){
   if(!('Notification' in window)){alert(L==='id'?'Browser tidak mendukung notifikasi.':'Your browser does not support notifications.');return;}
+  if(location.protocol==='file:'){alert(L==='id'?'Buka lewat http:// atau https://, bukan file://':'Open via http:// or https://, not file://');return;}
   Notification.requestPermission().then(p=>{
     if(p==='granted'){scheduleNotifs();render();}
   });
 }
 function scheduleNotifs(){
   const msgs=T[L].notifMsgs,title=T[L].notifTitle;
-  [6,9,12,15,18].forEach((h,i)=>{
-    const t=new Date();t.setHours(h,0,0,0);
-    if(t>new Date())setTimeout(()=>new Notification(title,{body:msgs[i]}),t-new Date());
-  });
+  const times=[6,9,12,15,18].map(h=>{const t=new Date();t.setHours(h,0,0,0);return t.getTime();});
+  if(navigator.serviceWorker&&navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({type:'SCHEDULE',times,title,messages:msgs});
+  }else if(navigator.serviceWorker){
+    navigator.serviceWorker.ready.then(reg=>{
+      if(reg.active)reg.active.postMessage({type:'SCHEDULE',times,title,messages:msgs});
+    });
+  }else{
+    times.forEach((ts,i)=>{const d=ts-Date.now();if(d>0)setTimeout(()=>new Notification(title,{body:msgs[i]}),d);});
+  }
 }
-if(typeof Notification!=='undefined'&&Notification.permission==='granted')scheduleNotifs();
+if('serviceWorker' in navigator && location.protocol!=='file:'){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').then(()=>{
+      if(Notification.permission==='granted')scheduleNotifs();
+    }).catch(()=>{});
+  });
+}else if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
+  scheduleNotifs();
+}
 render();
 setInterval(render,60000);
 </script>
