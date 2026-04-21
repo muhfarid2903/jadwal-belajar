@@ -9,6 +9,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 <title>Jadwal Belajar / Study Schedule</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -428,34 +430,55 @@ function showTab(id,el){
 function setLang(l){
   L=l;STATE.lang=l;save();render();
 }
+/* ── FIREBASE FCM ── */
+const FB_CONFIG={
+  apiKey:"AIzaSyB3Gu4o9BiL3i9Gi9dLGvGF0yxcCmXXp80",
+  authDomain:"jadwal-belajar-11785.firebaseapp.com",
+  projectId:"jadwal-belajar-11785",
+  storageBucket:"jadwal-belajar-11785.firebasestorage.app",
+  messagingSenderId:"899989543339",
+  appId:"1:899989543339:web:c81bc363fb3d8501e01aee"
+};
+const VAPID_KEY="BLK0sgKT9A9Ub3wRDyFUI84mMLISczpI7aThvzTVWBVGXi_HbG8yb1dxDO1g-tzhrN-UlHYW68o_SgETA9gXF-s";
+let fbMessaging=null;
+try{firebase.initializeApp(FB_CONFIG);fbMessaging=firebase.messaging();}catch(e){}
+
+function showToken(tok){
+  const w=document.createElement('div');
+  w.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;padding:20px;display:flex;align-items:center;justify-content:center;';
+  w.innerHTML=`<div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:16px;padding:20px;max-width:440px;width:100%;color:#F0EFE8;font-family:inherit;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:10px;">FCM Token</div>
+    <div style="font-size:12px;color:#999;margin-bottom:12px;">Copy token ini ke GitHub Secret bernama <b>FCM_TOKEN</b>.</div>
+    <textarea readonly style="width:100%;height:120px;background:#111;color:#F5E642;border:1px solid #2A2A2A;border-radius:8px;padding:10px;font-family:'Space Mono',monospace;font-size:11px;word-break:break-all;resize:none;">${tok}</textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button id="ctok" style="flex:1;background:#F5E642;color:#111;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer;font-family:inherit;">COPY</button>
+      <button id="xtok" style="flex:1;background:#222;color:#F0EFE8;border:1px solid #2A2A2A;border-radius:8px;padding:12px;font-weight:700;cursor:pointer;font-family:inherit;">TUTUP</button>
+    </div></div>`;
+  document.body.appendChild(w);
+  w.querySelector('#ctok').onclick=()=>{navigator.clipboard.writeText(tok);w.querySelector('#ctok').textContent='COPIED ✓';};
+  w.querySelector('#xtok').onclick=()=>w.remove();
+}
+
 function doNotif(){
   if(!('Notification' in window)){alert(L==='id'?'Browser tidak mendukung notifikasi.':'Your browser does not support notifications.');return;}
   if(location.protocol==='file:'){alert(L==='id'?'Buka lewat http:// atau https://, bukan file://':'Open via http:// or https://, not file://');return;}
   Notification.requestPermission().then(p=>{
-    if(p==='granted'){scheduleNotifs();render();}
+    if(p!=='granted')return;
+    render();
+    if(!fbMessaging){alert('Firebase belum ter-load. Refresh halaman.');return;}
+    navigator.serviceWorker.register('firebase-messaging-sw.js').then(reg=>{
+      return fbMessaging.getToken({vapidKey:VAPID_KEY,serviceWorkerRegistration:reg});
+    }).then(tok=>{
+      if(tok){STATE.fcmToken=tok;save();showToken(tok);}
+      else alert(L==='id'?'Gagal dapat token.':'Failed to get token.');
+    }).catch(err=>{alert('Error: '+err.message);});
   });
 }
-function scheduleNotifs(){
-  const msgs=T[L].notifMsgs,title=T[L].notifTitle;
-  const times=[6,9,12,15,18].map(h=>{const t=new Date();t.setHours(h,0,0,0);return t.getTime();});
-  if(navigator.serviceWorker&&navigator.serviceWorker.controller){
-    navigator.serviceWorker.controller.postMessage({type:'SCHEDULE',times,title,messages:msgs});
-  }else if(navigator.serviceWorker){
-    navigator.serviceWorker.ready.then(reg=>{
-      if(reg.active)reg.active.postMessage({type:'SCHEDULE',times,title,messages:msgs});
-    });
-  }else{
-    times.forEach((ts,i)=>{const d=ts-Date.now();if(d>0)setTimeout(()=>new Notification(title,{body:msgs[i]}),d);});
-  }
-}
+
 if('serviceWorker' in navigator && location.protocol!=='file:'){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js').then(()=>{
-      if(Notification.permission==='granted')scheduleNotifs();
-    }).catch(()=>{});
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
   });
-}else if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
-  scheduleNotifs();
 }
 render();
 setInterval(render,60000);
