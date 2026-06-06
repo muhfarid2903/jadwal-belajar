@@ -8,20 +8,34 @@ const MESSAGES = [
   { title: 'Jadwal Belajar', body: 'Sudah selesai belajar hari ini?' },
 ];
 
+const STALE_CODES = [
+  'messaging/registration-token-not-registered',
+  'messaging/invalid-registration-token',
+  'messaging/invalid-argument',
+];
+
 async function main() {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-  const token = process.env.FCM_TOKEN;
   const slot = parseInt(process.env.SLOT || '0', 10);
 
-  if (!token) throw new Error('FCM_TOKEN secret missing');
   if (!serviceAccount) throw new Error('FIREBASE_SERVICE_ACCOUNT secret missing');
 
   const msg = MESSAGES[slot] || MESSAGES[0];
 
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+  const db = admin.firestore();
 
-  const response = await admin.messaging().send({
-    token,
+  const snap = await db.collection('fcmTokens').get();
+  const docs = snap.docs;
+  if (!docs.length) {
+    console.log('No registered tokens, nothing to send. slot:', slot);
+    return;
+  }
+
+  const tokens = docs.map((d) => d.get('token') || d.id);
+
+  const response = await admin.messaging().sendEachForMulticast({
+    tokens,
     notification: { title: msg.title, body: msg.body },
     webpush: {
       notification: {
@@ -33,7 +47,26 @@ async function main() {
     },
   });
 
-  console.log('Sent:', response, 'slot:', slot, 'msg:', msg.body);
+  console.log(
+    `Sent ${response.successCount}/${tokens.length} (failures: ${response.failureCount}), slot ${slot}: ${msg.body}`
+  );
+
+  // Remove tokens that are no longer valid so the list stays clean.
+  const stale = [];
+  response.responses.forEach((r, i) => {
+    if (!r.success) {
+      const code = r.error && r.error.code;
+      console.warn('Token error:', code, '-', tokens[i].slice(0, 16) + '…');
+      if (STALE_CODES.includes(code)) stale.push(docs[i].ref);
+    }
+  });
+  if (stale.length) {
+    await Promise.all(stale.map((ref) => ref.delete().catch(() => {})));
+    console.log('Removed', stale.length, 'stale token(s).');
+  }
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

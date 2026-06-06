@@ -46,6 +46,7 @@ html,body{
 .spill{background:var(--y);border-radius:16px;padding:12px 16px;text-align:center;min-width:78px}
 .snum{font-size:34px;font-weight:700;color:#111;line-height:1;font-family:'Space Mono',monospace}
 .slbl{font-size:10px;color:rgba(0,0,0,.55);margin-top:3px;font-weight:700;letter-spacing:.08em}
+.srec{font-size:9px;color:rgba(0,0,0,.5);margin-top:5px;font-weight:700;letter-spacing:.06em;font-family:'Space Mono',monospace}
 
 /* LANG TOGGLE */
 .lang-toggle{
@@ -204,6 +205,7 @@ html,body{
         <div class="spill">
           <div class="snum" id="stn">0</div>
           <div class="slbl" id="slbl-streak">HARI 🔥</div>
+          <div class="srec" id="srec"></div>
         </div>
         <div class="lang-toggle">
           <button class="ltab on" id="lt-id" onclick="setLang('id')">ID</button>
@@ -232,7 +234,9 @@ html,body{
   <div class="px sec show" id="sec-today">
     <div class="slabel" id="lbl-must45"></div>
 
-    <div class="mcard ready" id="mc" onclick="toggleMust()">
+    <div class="mcard ready" id="mc" role="button" tabindex="0" aria-pressed="false"
+         onclick="toggleMust()"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMust();}">
       <div class="cbtn" id="cb">
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
           <path d="M4 11L9 16.5L18 5.5" stroke="#111" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -307,6 +311,7 @@ const T={
   id:{
     greet:['SELAMAT PAGI','SELAMAT SIANG','SELAMAT SORE','SELAMAT MALAM'],
     streak:'HARI 🔥',
+    record:'REKOR',
     week:'minggu ini',month:'bulan ini',total:'total',
     tab1:'Hari ini',tab2:'Minggu',tab3:'Riwayat',
     must45:'45 menit wajib',
@@ -326,6 +331,7 @@ const T={
   en:{
     greet:['GOOD MORNING','GOOD AFTERNOON','GOOD AFTERNOON','GOOD EVENING'],
     streak:'DAY STREAK 🔥',
+    record:'BEST',
     week:'this week',month:'this month',total:'total',
     tab1:'Today',tab2:'Week',tab3:'History',
     must45:'45-min must-do',
@@ -360,6 +366,17 @@ let currentUser=null,fsUnsub=null,fsSkipNext=false;
 function abk(){const h=new Date().getHours()+new Date().getMinutes()/60;return BH.findIndex(([s,e])=>h>=s&&h<e);}
 function wdays(){const t=new Date(),dw=t.getDay(),a=[];for(let i=0;i<7;i++){const d=new Date(t);d.setDate(t.getDate()-dw+i);a.push({key:fk(d),dw:i});}return a;}
 function streak(){let s=0,d=new Date();for(let i=0;i<90;i++){if(STATE.data[fk(d)])s++;else if(i>0)break;d.setDate(d.getDate()-1);}return s;}
+function bestStreak(){
+  const keys=Object.keys(STATE.data).filter(k=>STATE.data[k]).sort();
+  if(!keys.length)return 0;
+  let best=1,run=1;
+  for(let i=1;i<keys.length;i++){
+    const diff=Math.round((new Date(keys[i]+'T00:00:00')-new Date(keys[i-1]+'T00:00:00'))/86400000);
+    if(diff===1){run++;if(run>best)best=run;}
+    else if(diff>1){run=1;}
+  }
+  return best;
+}
 function cMonth(){const n=new Date(),d=new Date(n.getFullYear(),n.getMonth(),1);let c=0;while(d.getMonth()===n.getMonth()&&d<=n){if(STATE.data[fk(d)])c++;d.setDate(d.getDate()+1);}return c;}
 function cTotal(){return Object.keys(STATE.data).filter(k=>STATE.data[k]).length;}
 function greet(){const h=new Date().getHours();const i=h<11?0:h<14?1:h<18?2:3;return T[L].greet[i];}
@@ -375,10 +392,12 @@ function render(){
   document.getElementById('datestr').textContent=now.toLocaleDateString(L==='id'?'id-ID':'en-GB',{day:'numeric',month:'long',year:'numeric'}).toUpperCase();
   document.getElementById('stn').textContent=streak();
   document.getElementById('slbl-streak').textContent=tx.streak;
+  document.getElementById('srec').textContent=tx.record+' '+bestStreak();
 
   /* lang toggle */
-  document.getElementById('lt-id').className='ltab'+(L==='id'?' on':'');
-  document.getElementById('lt-en').className='ltab'+(L==='en'?' on':'');
+  const ltId=document.getElementById('lt-id'),ltEn=document.getElementById('lt-en');
+  ltId.className='ltab'+(L==='id'?' on':'');ltId.setAttribute('aria-pressed',L==='id'?'true':'false');
+  ltEn.className='ltab'+(L==='en'?' on':'');ltEn.setAttribute('aria-pressed',L==='en'?'true':'false');
 
   /* stats labels */
   document.getElementById('lbl-week').textContent=tx.week;
@@ -401,7 +420,10 @@ function render(){
   document.getElementById('mn').textContent=mu.n;
   document.getElementById('msub').textContent=tx.msub;
   const mp=document.getElementById('mp');mp.textContent=mu.t[L];mp.style.background=mu.bg;mp.style.color=mu.tc;
-  document.getElementById('mc').className='mcard'+(done?' done':' ready');
+  const mc=document.getElementById('mc');
+  mc.className='mcard'+(done?' done':' ready');
+  mc.setAttribute('aria-pressed',done?'true':'false');
+  mc.setAttribute('aria-label',mu.n+' — '+(done?tx.done:tx.notdone));
   document.getElementById('cb').className='cbtn'+(done?' on':'');
 
   /* progress */
@@ -557,33 +579,32 @@ if(fbAuth){
   fbAuth.getRedirectResult().catch(e=>console.warn('redirect:',e));
 }
 
-function showToken(tok){
-  const w=document.createElement('div');
-  w.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;padding:20px;display:flex;align-items:center;justify-content:center;';
-  w.innerHTML=`<div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:16px;padding:20px;max-width:440px;width:100%;color:#F0EFE8;font-family:inherit;">
-    <div style="font-size:16px;font-weight:700;margin-bottom:10px;">FCM Token</div>
-    <div style="font-size:12px;color:#999;margin-bottom:12px;">Copy token ini ke GitHub Secret bernama <b>FCM_TOKEN</b>.</div>
-    <textarea readonly style="width:100%;height:120px;background:#111;color:#F5E642;border:1px solid #2A2A2A;border-radius:8px;padding:10px;font-family:'Space Mono',monospace;font-size:11px;word-break:break-all;resize:none;">${tok}</textarea>
-    <div style="display:flex;gap:8px;margin-top:12px;">
-      <button id="ctok" style="flex:1;background:#F5E642;color:#111;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer;font-family:inherit;">COPY</button>
-      <button id="xtok" style="flex:1;background:#222;color:#F0EFE8;border:1px solid #2A2A2A;border-radius:8px;padding:12px;font-weight:700;cursor:pointer;font-family:inherit;">TUTUP</button>
-    </div></div>`;
-  document.body.appendChild(w);
-  w.querySelector('#ctok').onclick=()=>{navigator.clipboard.writeText(tok);w.querySelector('#ctok').textContent='COPIED ✓';};
-  w.querySelector('#xtok').onclick=()=>w.remove();
+function saveToken(tok){
+  STATE.fcmToken=tok;saveLocal();
+  if(!currentUser||!fbDb){alert(L==='id'?'Firebase belum siap. Coba lagi.':'Firebase not ready. Try again.');return;}
+  fbDb.collection('fcmTokens').doc(tok).set({
+    token:tok,
+    uid:currentUser.uid,
+    ua:navigator.userAgent,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  },{merge:true}).then(()=>{
+    render();
+    alert(L==='id'?'Pengingat aktif ✓ Perangkat ini terdaftar.':'Reminders active ✓ This device is registered.');
+  }).catch(e=>alert('Error: '+e.message));
 }
 
 function doNotif(){
   if(!('Notification' in window)){alert(L==='id'?'Browser tidak mendukung notifikasi.':'Your browser does not support notifications.');return;}
   if(location.protocol==='file:'){alert(L==='id'?'Buka lewat http:// atau https://, bukan file://':'Open via http:// or https://, not file://');return;}
+  if(!currentUser){alert(L==='id'?'Masuk dulu dengan Google agar pengingat bisa dikirim ke perangkat ini.':'Sign in with Google first so reminders can reach this device.');return;}
   Notification.requestPermission().then(p=>{
     if(p!=='granted')return;
     render();
     if(!fbMessaging){alert('Firebase belum ter-load. Refresh halaman.');return;}
-    navigator.serviceWorker.register('firebase-messaging-sw.js').then(reg=>{
+    navigator.serviceWorker.register('sw.js').then(reg=>{
       return fbMessaging.getToken({vapidKey:VAPID_KEY,serviceWorkerRegistration:reg});
     }).then(tok=>{
-      if(tok){STATE.fcmToken=tok;save();showToken(tok);}
+      if(tok)saveToken(tok);
       else alert(L==='id'?'Gagal dapat token.':'Failed to get token.');
     }).catch(err=>{alert('Error: '+err.message);});
   });

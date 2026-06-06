@@ -45,6 +45,5 @@ jobs:
       - name: Send push notification
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          FCM_TOKEN: ${{ secrets.FCM_TOKEN }}
           SLOT: ${{ steps.slot.outputs.idx }}
         run: node send-notification.js
