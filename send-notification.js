@@ -34,16 +34,14 @@ async function main() {
 
   const tokens = docs.map((d) => d.get('token') || d.id);
 
+  // Data-only payload: the service worker (onBackgroundMessage) renders the
+  // notification itself, so options like requireInteraction/vibrate actually
+  // apply and the browser does not auto-display a second, plain notification.
   const response = await admin.messaging().sendEachForMulticast({
     tokens,
-    notification: { title: msg.title, body: msg.body },
+    data: { title: msg.title, body: msg.body },
     webpush: {
-      notification: {
-        title: msg.title,
-        body: msg.body,
-        icon: './icon.svg',
-        badge: './icon.svg',
-      },
+      headers: { Urgency: 'high' },
     },
   });
 

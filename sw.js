@@ -24,8 +24,9 @@ messaging.onBackgroundMessage((payload) => {
     icon: './icon.svg',
     badge: './icon.svg',
     tag: 'jadwal-fcm',
-    vibrate: [200, 100, 200],
-    requireInteraction: false
+    vibrate: [500, 200, 500, 200, 500, 200, 500],
+    requireInteraction: true, // stays until tapped, harder to miss
+    renotify: true            // re-alert each slot even though tag is reused
   });
 });
 
