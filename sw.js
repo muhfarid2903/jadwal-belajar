@@ -17,8 +17,12 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const title = (payload.notification && payload.notification.title) || (payload.data && payload.data.title) || 'Jadwal Belajar';
-  const body = (payload.notification && payload.notification.body) || (payload.data && payload.data.body) || '';
+  // Messages with a notification payload are auto-displayed by the browser
+  // (using webpush.notification options), so skip here to avoid a duplicate.
+  // This handler only renders pure data-only messages as a fallback.
+  if (payload.notification) return;
+  const title = (payload.data && payload.data.title) || 'Jadwal Belajar';
+  const body = (payload.data && payload.data.body) || '';
   self.registration.showNotification(title, {
     body,
     icon: './icon.svg',

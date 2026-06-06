@@ -34,14 +34,24 @@ async function main() {
 
   const tokens = docs.map((d) => d.get('token') || d.id);
 
-  // Data-only payload: the service worker (onBackgroundMessage) renders the
-  // notification itself, so options like requireInteraction/vibrate actually
-  // apply and the browser does not auto-display a second, plain notification.
+  // Notification payload so Android shows it reliably via the system tray even
+  // when the app is closed. The alarm options (requireInteraction, vibrate,
+  // renotify) live in webpush.notification so they apply to that auto-display.
   const response = await admin.messaging().sendEachForMulticast({
     tokens,
-    data: { title: msg.title, body: msg.body },
+    notification: { title: msg.title, body: msg.body },
     webpush: {
       headers: { Urgency: 'high' },
+      notification: {
+        title: msg.title,
+        body: msg.body,
+        icon: './icon.svg',
+        badge: './icon.svg',
+        tag: 'jadwal-fcm',
+        renotify: true,
+        requireInteraction: true,
+        vibrate: [500, 200, 500, 200, 500, 200, 500],
+      },
     },
   });
 
