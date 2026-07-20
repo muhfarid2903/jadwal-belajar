@@ -56,6 +56,7 @@
   <div class="tabs">
     <button class="tab on" id="tab-today" onclick="showTab('today',this)"></button>
     <button class="tab" id="tab-week" onclick="showTab('week',this)"></button>
+    <button class="tab" id="tab-kur" onclick="showTab('kur',this)"></button>
     <button class="tab" id="tab-hist" onclick="showTab('hist',this)"></button>
   </div>
 
@@ -86,6 +87,14 @@
       <div class="ptrack"><div class="pfill" id="pf" style="width:0%"></div></div>
     </div>
 
+    <div class="pcard">
+      <div class="prow">
+        <div class="ptitle" id="lbl-kprogress"></div>
+        <div class="pval" id="kpv">0/0</div>
+      </div>
+      <div class="ptrack"><div class="pfill" id="kpf" style="width:0%"></div></div>
+    </div>
+
     <div class="slabel" id="lbl-blocks"></div>
     <div class="blist" id="blks"></div>
 
@@ -105,6 +114,15 @@
     <div class="lcard" id="wlist"></div>
   </div>
 
+  <div class="px sec" id="sec-kur">
+    <div class="slabel" id="lbl-kur"></div>
+    <div class="kurhead">
+      <div class="kursub" id="kur-sub"></div>
+      <div class="kurcount" id="kur-count"></div>
+    </div>
+    <div id="kurlist"></div>
+  </div>
+
   <div class="px sec" id="sec-hist">
     <div class="slabel" id="lbl-history"></div>
     <div class="lcard" id="hlist"></div>
@@ -112,6 +130,7 @@
 
 </div>
 
+<script src="curriculum.js"></script>
 <script src="app.js"></script>
 <script src="firebase-sync.js"></script>
 </body>

@@ -48,10 +48,11 @@ html,body{
 .scl{font-size:11px;color:var(--mu);margin-top:3px;font-weight:600;letter-spacing:.04em}
 
 /* TABS */
-.tabs{display:flex;padding:0 20px;gap:8px;margin-bottom:24px}
+.tabs{display:flex;padding:0 20px;gap:6px;margin-bottom:24px}
+/* Sized so four tabs still fit without wrapping on a 360px-wide phone. */
 .tab{
-  flex:1;font-size:13px;font-weight:700;letter-spacing:.05em;
-  padding:12px 0;border-radius:10px;
+  flex:1;min-width:0;font-size:12px;font-weight:700;letter-spacing:.03em;
+  padding:12px 2px;border-radius:10px;
   border:1px solid var(--bd);cursor:pointer;
   background:transparent;color:var(--mu);
   transition:all .18s;font-family:'Space Grotesk',sans-serif;
@@ -90,9 +91,11 @@ html,body{
 .cbtn svg{opacity:0;transition:opacity .2s}
 .cbtn.on svg{opacity:1}
 .mbody{flex:1;min-width:0}
-.mname{font-size:19px;font-weight:700;color:var(--mt);margin-bottom:4px;letter-spacing:-.4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Curriculum topic names run much longer than the old fixed labels, so this
+   wraps to two lines and clamps instead of truncating on the first line. */
+.mname{font-size:19px;font-weight:700;color:var(--mt);margin-bottom:4px;letter-spacing:-.4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-clamp:2}
 .msub{font-size:12px;color:var(--mu);font-family:'Space Mono',monospace}
-.mpill{display:inline-block;font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;margin-top:8px;letter-spacing:.06em}
+.mpill{display:inline-block;font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;margin-top:8px;letter-spacing:.06em;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
 .marr{font-size:22px;color:var(--bd);flex-shrink:0}
 
 /* PROGRESS */
@@ -160,6 +163,41 @@ html,body{
   background-size:cover;background-position:center;
 }
 .auth-tx{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* CURRICULUM */
+.kurhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:14px}
+.kursub{font-size:10px;color:var(--mu);font-family:'Space Mono',monospace;letter-spacing:.04em;line-height:1.5}
+.kurcount{font-size:13px;font-weight:700;color:var(--y);font-family:'Space Mono',monospace;white-space:nowrap}
+.bab{background:var(--s1);border:1px solid var(--bd);border-radius:14px;margin-bottom:8px;overflow:hidden}
+.bab.bopen{border-color:rgba(245,230,66,.28)}
+.babh{
+  display:flex;align-items:center;gap:12px;width:100%;
+  padding:14px 16px;background:transparent;border:none;cursor:pointer;
+  color:var(--mt);text-align:left;font-family:'Space Grotesk',sans-serif;
+}
+.babn{font-size:11px;font-weight:700;color:var(--mu);font-family:'Space Mono',monospace;flex-shrink:0}
+.babn.bfull{color:var(--yd)}
+.babt{flex:1;font-size:14px;font-weight:600;color:var(--mt);line-height:1.3}
+.babc{font-size:11px;font-weight:700;color:var(--mu);font-family:'Space Mono',monospace;flex-shrink:0}
+.babc.bfull{color:var(--y)}
+.babx{font-size:11px;color:var(--mu);flex-shrink:0;width:10px}
+.babb{padding:0 16px 8px;border-top:1px solid var(--bd)}
+.titem{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd);cursor:pointer}
+.titem:last-child{border-bottom:none}
+.titem.tcur{margin:0 -16px;padding-left:16px;padding-right:16px;background:rgba(245,230,66,.06)}
+.tbox{
+  width:20px;height:20px;border-radius:6px;margin-top:1px;
+  border:2px solid var(--bd);background:var(--s2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;
+}
+.tbox.on{background:var(--y);border-color:var(--y)}
+.tbox svg{opacity:0;transition:opacity .18s}
+.tbox.on svg{opacity:1}
+.tname{font-size:13px;line-height:1.45;color:var(--mt);flex:1}
+.titem.tdone .tname{color:var(--mu);text-decoration:line-through}
+.bab.bsolo .babt{font-weight:600}
+.bab.bsdone .babt{color:var(--mu);text-decoration:line-through}
+.bab.bcur{border-color:rgba(245,230,66,.28);background:rgba(245,230,66,.06)}
 
 /* LIST */
 .lcard{background:var(--s1);border-radius:14px;border:1px solid var(--bd);padding:0 16px;margin-bottom:12px}

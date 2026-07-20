@@ -52,7 +52,7 @@ function renderAuth(){
 
 function cloudSave(){
   if(!currentUser||!fbDb)return;
-  const payload={data:STATE.data||{},lang:STATE.lang||'id'};
+  const payload={data:STATE.data||{},topics:STATE.topics||{},lang:STATE.lang||'id'};
   // Remembered so the snapshot listener can recognize this write's own echo
   // by content instead of a one-shot "skip next" flag, which could get
   // consumed by the wrong event (and mask a real remote change) whenever
@@ -76,19 +76,22 @@ function startSync(){
     }
     const d=snap.data();
     const sData=d.data||{};
+    const sTopics=d.topics||{};
     const sLang=d.lang||'id';
 
-    if(JSON.stringify({data:sData,lang:sLang})===lastPushed)return;
+    if(JSON.stringify({data:sData,topics:sTopics,lang:sLang})===lastPushed)return;
 
     if(firstSync){
       firstSync=false;
-      const lData=STATE.data||{};
+      const lData=STATE.data||{},lTopics=STATE.topics||{};
+      const newDays=Object.keys(lData).some(k=>!(k in sData));
+      const newTopics=Object.keys(lTopics).some(k=>!(k in sTopics));
       // Anything ticked off on this device while signed out would be lost by
       // taking the cloud copy wholesale, so on the first snapshot the two are
       // unioned and the result pushed back up.
-      const localOnly=Object.keys(lData).filter(k=>!(k in sData));
-      if(localOnly.length){
+      if(newDays||newTopics){
         STATE.data={...sData,...lData};
+        STATE.topics={...sTopics,...lTopics};
         STATE.lang=sLang;L=sLang;
         saveLocal();render();renderAuth();
         cloudSave();
@@ -96,6 +99,7 @@ function startSync(){
       }
     }
     STATE.data=sData;
+    STATE.topics=sTopics;
     STATE.lang=sLang;L=sLang;
     saveLocal();render();renderAuth();
   },e=>console.warn('onSnapshot:',e));
@@ -113,7 +117,7 @@ if(fbAuth){
       // cloud doc would leak that other account's history in, so drop it
       // first whenever the owning uid doesn't match.
       if(STATE.uid&&STATE.uid!==u.uid){
-        STATE.data={};
+        STATE.data={};STATE.topics={};
         saveLocal();render();
       }
       STATE.uid=u.uid;saveLocal();
