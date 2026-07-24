@@ -52,7 +52,7 @@ function renderAuth(){
 
 function cloudSave(){
   if(!currentUser||!fbDb)return;
-  const payload={data:STATE.data||{},topics:STATE.topics||{},lang:STATE.lang||'id'};
+  const payload={data:STATE.data||{},topics:STATE.topics||{},terms:STATE.terms||{},lang:STATE.lang||'id'};
   // Remembered so the snapshot listener can recognize this write's own echo
   // by content instead of a one-shot "skip next" flag, which could get
   // consumed by the wrong event (and mask a real remote change) whenever
@@ -77,21 +77,24 @@ function startSync(){
     const d=snap.data();
     const sData=d.data||{};
     const sTopics=d.topics||{};
+    const sTerms=d.terms||{};
     const sLang=d.lang||'id';
 
-    if(JSON.stringify({data:sData,topics:sTopics,lang:sLang})===lastPushed)return;
+    if(JSON.stringify({data:sData,topics:sTopics,terms:sTerms,lang:sLang})===lastPushed)return;
 
     if(firstSync){
       firstSync=false;
-      const lData=STATE.data||{},lTopics=STATE.topics||{};
+      const lData=STATE.data||{},lTopics=STATE.topics||{},lTerms=STATE.terms||{};
       const newDays=Object.keys(lData).some(k=>!(k in sData));
       const newTopics=Object.keys(lTopics).some(k=>!(k in sTopics));
+      const newTerms=Object.keys(lTerms).some(k=>!(k in sTerms));
       // Anything ticked off on this device while signed out would be lost by
       // taking the cloud copy wholesale, so on the first snapshot the two are
       // unioned and the result pushed back up.
-      if(newDays||newTopics){
+      if(newDays||newTopics||newTerms){
         STATE.data={...sData,...lData};
         STATE.topics={...sTopics,...lTopics};
+        STATE.terms={...sTerms,...lTerms};
         STATE.lang=sLang;L=sLang;
         saveLocal();render();renderAuth();
         cloudSave();
@@ -100,6 +103,7 @@ function startSync(){
     }
     STATE.data=sData;
     STATE.topics=sTopics;
+    STATE.terms=sTerms;
     STATE.lang=sLang;L=sLang;
     saveLocal();render();renderAuth();
   },e=>console.warn('onSnapshot:',e));
@@ -117,7 +121,7 @@ if(fbAuth){
       // cloud doc would leak that other account's history in, so drop it
       // first whenever the owning uid doesn't match.
       if(STATE.uid&&STATE.uid!==u.uid){
-        STATE.data={};STATE.topics={};
+        STATE.data={};STATE.topics={};STATE.terms={};
         saveLocal();render();
       }
       STATE.uid=u.uid;saveLocal();

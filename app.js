@@ -2,7 +2,8 @@
    No Firebase here — that lives in firebase-sync.js, which is loaded right
    after this file and shares this same top-level scope (both are classic,
    non-module <script> tags, so `let`/`const` here are visible there too).
-   Curriculum data comes from curriculum.js, loaded before this file. */
+   Curriculum data comes from curriculum.js and the medical terms from
+   terms.js, both loaded before this file. */
 
 /* ── DATA ── */
 /* The weekly rotation is the study *source* for each day (which book,
@@ -35,7 +36,7 @@ const T={
     streak:'HARI 🔥',
     record:'REKOR',
     week:'minggu ini',month:'bulan ini',total:'total',
-    tab1:'Hari ini',tab2:'Minggu',tab3:'Kurikulum',tab4:'Riwayat',
+    tab1:'Hari ini',tab2:'Minggu',tab3:'Kurikulum',tab4:'Istilah',tab5:'Riwayat',
     must45:'45 menit wajib',
     msub:'45 mnt · 15.00–18.00',
     progress:'Progress minggu ini',
@@ -53,6 +54,14 @@ const T={
     kurSelesai:'Semua topik kurikulum selesai 🎉',
     kurSub:'Tabel 2.3 · Standar Nasional Pendidikan Dokter SpJP',
     bab:'Bab',
+    istHari:'Istilah medis hari ini',
+    istTitle:'Istilah medis',
+    istSub:'Satu istilah per hari · dari semua sistem',
+    istProgress:'Progress istilah',
+    istKata:'istilah',
+    istSelesai:'Semua istilah sudah dipelajari 🎉',
+    istKosong:'Belum ada istilah yang dicatat hari ini',
+    istSinonim:'Sinonim',
     notifMsgs:['Selamat pagi! Waktunya siap-siap.','Jam kerja dimulai. Semangat!','Istirahat siang, waktunya tidur.','Waktunya belajar 45 menit wajib!','Sudah selesai belajar hari ini?'],
     notifTitle:'Jadwal Belajar',
   },
@@ -61,7 +70,7 @@ const T={
     streak:'DAY STREAK 🔥',
     record:'BEST',
     week:'this week',month:'this month',total:'total',
-    tab1:'Today',tab2:'Week',tab3:'Curriculum',tab4:'History',
+    tab1:'Today',tab2:'Week',tab3:'Curriculum',tab4:'Terms',tab5:'History',
     must45:'45-min must-do',
     msub:'45 min · 15:00–18:00',
     progress:'This week\'s progress',
@@ -79,6 +88,14 @@ const T={
     kurSelesai:'All curriculum topics complete 🎉',
     kurSub:'Table 2.3 · Indonesian Cardiology Specialist Standard',
     bab:'Ch.',
+    istHari:'Today\'s medical term',
+    istTitle:'Medical terms',
+    istSub:'One term a day · from every system',
+    istProgress:'Terms progress',
+    istKata:'terms',
+    istSelesai:'All terms learned 🎉',
+    istKosong:'No term recorded for today yet',
+    istSinonim:'Also',
     notifMsgs:['Good morning! Time to get ready.','Work time. Let\'s go!','Afternoon rest, time to nap.','Time for your 45-min study!','Did you finish studying today?'],
     notifTitle:'Study Schedule',
   }
@@ -94,6 +111,7 @@ function save(){saveLocal();cloudSave();}
 let STATE=load();
 if(!STATE.data)STATE={data:{},lang:'id'};
 if(!STATE.topics)STATE.topics={};   // topicId -> date completed (added with the curriculum)
+if(!STATE.terms)STATE.terms={};     // termId  -> date learned (added with the medical terms)
 let L=STATE.lang||'id';
 
 /* ── HELPERS ── */
@@ -125,6 +143,17 @@ function currentTopic(){return TOPICS.find(t=>!topicDone(t.id))||null;}
 function topicOnDate(k){
   const id=Object.keys(STATE.topics).find(i=>STATE.topics[i]===k);
   return id?(TOPIC_BY_ID[id]||null):null;
+}
+
+/* ── ISTILAH ── */
+function termDone(id){return !!STATE.terms[id];}
+function termsDone(){return TERMS.filter(t=>termDone(t.id)).length;}
+/* The daily pick walks TERM_SEQ, which rotates between systems, so two
+   consecutive days rarely land on the same one. */
+function currentTerm(){return TERM_SEQ.find(t=>!termDone(t.id))||null;}
+function termOnDate(k){
+  const id=Object.keys(STATE.terms).find(i=>STATE.terms[i]===k);
+  return id?(TERM_BY_ID[id]||null):null;
 }
 
 /* ── RENDER ── */
@@ -160,7 +189,8 @@ function render(){
   document.getElementById('tab-today').textContent=tx.tab1;
   document.getElementById('tab-week').textContent=tx.tab2;
   document.getElementById('tab-kur').textContent=tx.tab3;
-  document.getElementById('tab-hist').textContent=tx.tab4;
+  document.getElementById('tab-ist').textContent=tx.tab4;
+  document.getElementById('tab-hist').textContent=tx.tab5;
 
   /* must-do card: curriculum topic (what) + weekly source (how/when) */
   document.getElementById('lbl-must45').textContent=tx.must45;
@@ -185,6 +215,34 @@ function render(){
   mc.setAttribute('aria-label',(shown?shown.t:src.n)+' — '+(done?tx.done:tx.notdone));
   document.getElementById('cb').className='cbtn'+(done?' on':'');
 
+  /* istilah of the day: the one learned today if it is already ticked,
+     otherwise the next one due */
+  document.getElementById('lbl-ist').textContent=tx.istHari;
+  const tday=termOnDate(key)||currentTerm();
+  const ic=document.getElementById('ic');
+  if(tday){
+    const tdone=termDone(tday.id);
+    document.getElementById('in').textContent=tday.t;
+    document.getElementById('ialt').textContent=tday.a?tx.istSinonim+': '+tday.a:'';
+    document.getElementById('idef').textContent=tday.d[L];
+    const ip=document.getElementById('ip');
+    ip.textContent=tday.sysT[L].toUpperCase();
+    ip.style.background=tday.pal.bg;ip.style.color=tday.pal.tc;
+    ic.className='icard'+(tdone?' done':' ready');
+    ic.setAttribute('aria-pressed',tdone?'true':'false');
+    ic.setAttribute('aria-label',tday.t+' — '+(tdone?tx.done:tx.notdone));
+    ic.dataset.term=tday.id;
+    document.getElementById('icb').className='cbtn small'+(tdone?' on':'');
+  }else{
+    /* Everything learned — nothing left to show but the congratulation. */
+    document.getElementById('in').textContent=tx.istSelesai;
+    document.getElementById('ialt').textContent='';
+    document.getElementById('idef').textContent='';
+    document.getElementById('ip').style.display='none';
+    ic.className='icard done';ic.dataset.term='';
+    document.getElementById('icb').className='cbtn small on';
+  }
+
   /* progress */
   document.getElementById('lbl-progress').textContent=tx.progress;
   document.getElementById('pv').textContent=wc+'/7';
@@ -194,6 +252,11 @@ function render(){
   document.getElementById('lbl-kprogress').textContent=tx.kurProgress;
   document.getElementById('kpv').textContent=kd+'/'+kt;
   document.getElementById('kpf').style.width=Math.round(kd/kt*100)+'%';
+
+  const id_=termsDone(),it_=TERMS.length;
+  document.getElementById('lbl-iprogress').textContent=tx.istProgress;
+  document.getElementById('ipv').textContent=id_+'/'+it_;
+  document.getElementById('ipf').style.width=Math.round(id_/it_*100)+'%';
 
   /* blocks */
   document.getElementById('lbl-blocks').textContent=tx.blocks;
@@ -232,6 +295,7 @@ function render(){
   document.getElementById('hlist').innerHTML=hr;
 
   renderKur();
+  renderIst();
 }
 
 /* Which chapter is expanded in the curriculum tab. UI-only, so it is kept
@@ -285,6 +349,45 @@ function renderKur(){
   }).join('');
 }
 
+/* Which system is expanded in the terms tab — UI-only, like openBab. */
+let openSys=null;
+function renderIst(){
+  const tx=T[L],cur=currentTerm();
+  if(openSys===null)openSys=cur?cur.sys:1;
+
+  document.getElementById('lbl-istilah').textContent=tx.istTitle;
+  document.getElementById('ist-sub').textContent=tx.istSub;
+  document.getElementById('ist-count').textContent=termsDone()+'/'+TERMS.length+' '+tx.istKata;
+
+  document.getElementById('istlist').innerHTML=ISTILAH.map(sys=>{
+    const dn=sys.items.filter(it=>termDone(it.id)).length,tot=sys.items.length;
+    const open=openSys===sys.n,full=dn===tot;
+    const rows=open?sys.items.map(it=>{
+      const isDone=termDone(it.id),isCur=cur&&cur.id===it.id;
+      return`<div class="titem iitem${isDone?' tdone':''}${isCur?' tcur':''}" role="button" tabindex="0"
+        aria-pressed="${isDone?'true':'false'}"
+        onclick="toggleTerm('${it.id}')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTerm('${it.id}');}">
+        <div class="tbox${isDone?' on':''}"><svg width="12" height="12" viewBox="0 0 22 22" fill="none"><path d="M4 11L9 16.5L18 5.5" stroke="#111" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="ibody">
+          <div class="tname iname">${esc(it.t)}</div>
+          ${it.a?`<div class="ialt2">${esc(tx.istSinonim)}: ${esc(it.a)}</div>`:''}
+          <div class="idef2">${esc(it.d[L])}</div>
+        </div>
+      </div>`;
+    }).join(''):'';
+    return`<div class="bab${open?' bopen':''}">
+      <button class="babh" onclick="toggleSys(${sys.n})" aria-expanded="${open?'true':'false'}">
+        <span class="babn${full?' bfull':''}">${String(sys.n).padStart(2,'0')}</span>
+        <span class="babt">${esc(sys.t[L])}</span>
+        <span class="babc${full?' bfull':''}">${dn}/${tot}</span>
+        <span class="babx">${open?'▾':'▸'}</span>
+      </button>
+      ${open?`<div class="babb">${rows}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
 /* ── ACTIONS ── */
 function toggleMust(){
   const k=tk();
@@ -310,11 +413,30 @@ function toggleBab(n){
   openBab=(openBab===n)?null:n;
   renderKur();
 }
+/* Like toggleTopic, learning a term is tracked on its own and deliberately
+   leaves the daily streak alone. */
+function toggleTerm(id){
+  if(STATE.terms[id])delete STATE.terms[id];
+  else STATE.terms[id]=tk();
+  save();render();
+}
+/* The daily card carries whichever term it is currently showing. */
+function toggleTermToday(){
+  const id=document.getElementById('ic').dataset.term;
+  if(id)toggleTerm(id);
+}
+function toggleSys(n){
+  openSys=(openSys===n)?null:n;
+  renderIst();
+}
 function showTab(id,el){
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('show'));
   document.getElementById('sec-'+id).classList.add('show');
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   el.classList.add('on');
+  /* Five tabs overflow a narrow phone, so the tapped one is pulled fully
+     into view instead of being left half cut at the edge. */
+  if(el.scrollIntoView)el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
 }
 function setLang(l){
   L=l;STATE.lang=l;save();render();renderAuth();

@@ -57,6 +57,7 @@
     <button class="tab on" id="tab-today" onclick="showTab('today',this)"></button>
     <button class="tab" id="tab-week" onclick="showTab('week',this)"></button>
     <button class="tab" id="tab-kur" onclick="showTab('kur',this)"></button>
+    <button class="tab" id="tab-ist" onclick="showTab('ist',this)"></button>
     <button class="tab" id="tab-hist" onclick="showTab('hist',this)"></button>
   </div>
 
@@ -79,6 +80,26 @@
       <div class="marr">›</div>
     </div>
 
+    <div class="slabel" id="lbl-ist"></div>
+
+    <div class="icard ready" id="ic" role="button" tabindex="0" aria-pressed="false"
+         onclick="toggleTermToday()"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTermToday();}">
+      <div class="ihead">
+        <div class="cbtn small" id="icb">
+          <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+            <path d="M4 11L9 16.5L18 5.5" stroke="#111" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="ihbd">
+          <div class="iname2" id="in"></div>
+          <div class="ialt" id="ialt"></div>
+        </div>
+        <span class="mpill" id="ip"></span>
+      </div>
+      <div class="idef" id="idef"></div>
+    </div>
+
     <div class="pcard">
       <div class="prow">
         <div class="ptitle" id="lbl-progress"></div>
@@ -93,6 +114,14 @@
         <div class="pval" id="kpv">0/0</div>
       </div>
       <div class="ptrack"><div class="pfill" id="kpf" style="width:0%"></div></div>
+    </div>
+
+    <div class="pcard">
+      <div class="prow">
+        <div class="ptitle" id="lbl-iprogress"></div>
+        <div class="pval" id="ipv">0/0</div>
+      </div>
+      <div class="ptrack"><div class="pfill" id="ipf" style="width:0%"></div></div>
     </div>
 
     <div class="slabel" id="lbl-blocks"></div>
@@ -123,6 +152,15 @@
     <div id="kurlist"></div>
   </div>
 
+  <div class="px sec" id="sec-ist">
+    <div class="slabel" id="lbl-istilah"></div>
+    <div class="kurhead">
+      <div class="kursub" id="ist-sub"></div>
+      <div class="kurcount" id="ist-count"></div>
+    </div>
+    <div id="istlist"></div>
+  </div>
+
   <div class="px sec" id="sec-hist">
     <div class="slabel" id="lbl-history"></div>
     <div class="lcard" id="hlist"></div>
@@ -131,6 +169,7 @@
 </div>
 
 <script src="curriculum.js"></script>
+<script src="terms.js"></script>
 <script src="app.js"></script>
 <script src="firebase-sync.js"></script>
 </body>
