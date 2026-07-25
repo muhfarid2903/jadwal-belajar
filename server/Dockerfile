@@ -4,6 +4,11 @@ FROM node:24-alpine
 
 WORKDIR /app
 
+# Tanpa tzdata, Alpine mengabaikan env TZ dan waktu tetap UTC — cap waktu di log
+# jadi tidak cocok dengan jadwal WIB yang dipakai cron. Penjadwalannya sendiri
+# ditentukan CRON_TZ di host, jadi ini murni soal keterbacaan log.
+RUN apk add --no-cache tzdata
+
 # Dependensi dipasang lebih dulu agar layer-nya bisa dipakai ulang selama
 # package.json tidak berubah. Satu dependensi saja: web-push.
 COPY package.json ./
