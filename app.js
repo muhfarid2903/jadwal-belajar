@@ -1,5 +1,5 @@
 /* Core app: schedule data, local state, rendering, and UI actions.
-   No Firebase here — that lives in firebase-sync.js, which is loaded right
+   Nothing about the server lives here — that is sync.js, which is loaded right
    after this file and shares this same top-level scope (both are classic,
    non-module <script> tags, so `let`/`const` here are visible there too).
    Curriculum data comes from curriculum.js and the medical terms from
