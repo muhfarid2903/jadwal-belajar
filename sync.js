@@ -61,7 +61,9 @@ function doAuth() {
         startSync();
         return;
       }
-      if (r.status === 429) {
+      if (r.status === 401) {
+        alert(L === 'id' ? 'Passphrase salah.' : 'Wrong passphrase.');
+      } else if (r.status === 429) {
         alert(L === 'id'
           ? 'Terlalu banyak percobaan. Coba lagi sekitar 15 menit lagi.'
           : 'Too many attempts. Try again in about 15 minutes.');
@@ -70,10 +72,18 @@ function doAuth() {
           ? 'Passphrase belum dipasang di server.'
           : 'No passphrase configured on the server yet.');
       } else {
-        alert(L === 'id' ? 'Passphrase salah.' : 'Wrong passphrase.');
+        // 404 dan galat server tidak boleh dilaporkan sebagai passphrase salah:
+        // salinan app yang disajikan dari origin tanpa /api (mis. GitHub Pages)
+        // akan selalu mendarat di sini, dan pesan "passphrase salah" membuat
+        // orang mengira dirinya salah ketik.
+        alert((L === 'id'
+          ? 'Server sync tidak dapat dihubungi dari alamat ini (kode '
+          : 'Cannot reach the sync server from this address (code ') + r.status + ').');
       }
     })
-    .catch((e) => alert('Error: ' + e.message));
+    .catch(() => alert(L === 'id'
+      ? 'Tidak bisa menghubungi server. Periksa koneksi internet.'
+      : 'Could not reach the server. Check your internet connection.'));
 }
 
 function doLogout() {
@@ -230,7 +240,12 @@ async function subscribePush(reg) {
     // FCM); cabut dulu, baru berlangganan ulang dengan kunci VAPID kita.
     const old = await reg.pushManager.getSubscription();
     if (!old) throw e;
+    const endpointLama = old.endpoint;
     await old.unsubscribe();
+    // Barisnya ikut dihapus di server. Tanpa ini ia menetap sampai pengiriman
+    // berikutnya gagal dengan 410 — tidak berbahaya, tapi menyisakan langganan
+    // mati yang membingungkan saat memeriksa daftar perangkat.
+    api('/push/subscribe', { method: 'DELETE', body: { endpoint: endpointLama } }).catch(() => {});
     return reg.pushManager.subscribe(opts);
   }
 }
