@@ -1,0 +1,13 @@
+# Pengirim notifikasi harian, dipanggil oleh jadwal-notify.timer.
+#
+#   install -m 0644 jadwal-notify.service jadwal-notify.timer /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now jadwal-notify.timer
+[Unit]
+Description=Notifikasi harian Jadwal Belajar
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+# `auto` memilih slot pesan dari jam WIB saat ini.
+ExecStart=/usr/bin/docker exec jadwal-belajar-api node notify.js auto
