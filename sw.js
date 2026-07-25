@@ -42,10 +42,12 @@ self.addEventListener('notificationclick', (e) => {
 });
 
 /* ── CACHE OFFLINE ── */
-// Dinaikkan ke v6: firebase-sync.js diganti sync.js, dan versi baru memaksa
-// install lama membuang cache-nya supaya index.html baru tidak pernah
-// berpasangan dengan berkas JS lama.
-const CACHE = 'jadwal-v6';
+// Cache di sini hanya salinan untuk keadaan offline, bukan sumber utama: aset
+// dilayani network-first (lihat listener fetch). Dulu cache-first, yang berarti
+// setiap kali satu aset berubah versi CACHE harus dinaikkan manual — sekali
+// terlupa, install lama memasangkan index.html baru dengan JS lama. Sekarang
+// versinya hanya perlu naik kalau daftar ASSETS berubah.
+const CACHE = 'jadwal-v7';
 const ASSETS = ['./', './index.html', './style.css', './curriculum.js', './terms.js', './app.js', './sync.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (e) => {
@@ -64,25 +66,31 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
 
+  const url = new URL(req.url);
+
   // Permintaan ke API tidak boleh disentuh cache: harus selalu ke jaringan,
   // dan saat offline biarkan gagal supaya client tahu ia sedang tak tersambung.
-  if (new URL(req.url).pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/api/')) return;
 
-  // Network-first untuk navigasi supaya pembaruan app langsung terpakai;
-  // jatuh ke cache saat offline.
-  if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req)
-        .then((res) => {
+  // Lintas origin (font, dsb.) diteruskan apa adanya.
+  if (url.origin !== self.location.origin) return;
+
+  // Network-first untuk seluruh aset app, bukan hanya navigasi: pembaruan
+  // langsung terpakai tanpa perlu menaikkan versi CACHE, dan index.html baru
+  // tidak mungkin berpasangan dengan berkas JS lama. Salinan cache diperbarui
+  // di belakang, lalu dipakai hanya kalau jaringan gagal.
+  const isNav = req.mode === 'navigate';
+  e.respondWith(
+    fetch(req)
+      .then((res) => {
+        if (res && res.ok) {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put('./index.html', copy));
-          return res;
-        })
-        .catch(() => caches.match('./index.html').then((r) => r || caches.match('./')))
-    );
-    return;
-  }
-
-  // Cache-first untuk sisanya (aset statis).
-  e.respondWith(caches.match(req).then((r) => r || fetch(req)));
+          caches.open(CACHE).then((c) => c.put(isNav ? './index.html' : req, copy));
+        }
+        return res;
+      })
+      .catch(() =>
+        caches.match(isNav ? './index.html' : req).then((r) => r || caches.match('./'))
+      )
+  );
 });
