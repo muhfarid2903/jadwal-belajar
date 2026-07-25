@@ -4,3 +4,7 @@ node_modules/
 .claude/
 .firebase/
 firebase-debug.log
+
+# Rahasia dan data server: hanya hidup di VPS, tidak pernah masuk git.
+deploy/.env
+deploy/data/

@@ -1,91 +1,88 @@
-/* Unified service worker: offline caching + Firebase Cloud Messaging.
-   Both used to live in separate SWs registered at the same root scope,
-   so they kept overwriting each other. Merging them means caching AND
-   background notifications work at the same time. */
-importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+/* Service worker: cache offline + Web Push.
 
-firebase.initializeApp({
-  apiKey: "AIzaSyB3Gu4o9BiL3i9Gi9dLGvGF0yxcCmXXp80",
-  authDomain: "jadwal-belajar-11785.firebaseapp.com",
-  projectId: "jadwal-belajar-11785",
-  storageBucket: "jadwal-belajar-11785.firebasestorage.app",
-  messagingSenderId: "899989543339",
-  appId: "1:899989543339:web:c81bc363fb3d8501e01aee"
-});
+   Dulu berkas ini memuat SDK Firebase Messaging lewat importScripts dan
+   menangani onBackgroundMessage. Sekarang push-nya standar Web Push, jadi tidak
+   ada SDK yang perlu diunduh dan tampilan notifikasinya sepenuhnya ditentukan
+   di sini — tidak ada lagi kemungkinan notifikasi muncul dobel karena browser
+   ikut menampilkan payload-nya sendiri. */
 
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
-  // Messages with a notification payload are auto-displayed by the browser
-  // (using webpush.notification options), so skip here to avoid a duplicate.
-  // This handler only renders pure data-only messages as a fallback.
-  if (payload.notification) return;
-  const title = (payload.data && payload.data.title) || 'Jadwal Belajar';
-  const body = (payload.data && payload.data.body) || '';
-  self.registration.showNotification(title, {
-    body,
-    icon: './icon.svg',
-    badge: './icon.svg',
-    tag: 'jadwal-fcm',
-    vibrate: [500, 200, 500, 200, 500, 200, 500],
-    requireInteraction: true, // stays until tapped, harder to miss
-    renotify: true            // re-alert each slot even though tag is reused
-  });
-});
-
-/* ── OFFLINE CACHE ── */
-// Bumped from v2: index.html now pulls in style.css/app.js/firebase-sync.js
-// (previously inlined), so those need to be in ASSETS too, and the version
-// bump forces existing installs to drop the old cache and refetch everything
-// instead of serving a stale index.html next to old inlined-only assets.
-// Bumped again to v5 for terms.js: assets are served cache-first, so without
-// the bump an existing install would pair the new index.html with the old
-// cached app.js, which knows nothing about the medical terms.
-const CACHE = 'jadwal-v5';
-const ASSETS = ['./', './index.html', './style.css', './curriculum.js', './terms.js', './app.js', './firebase-sync.js', './manifest.json', './icon.svg'];
-
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
-});
-
-self.addEventListener('activate', e => {
+/* ── WEB PUSH ── */
+self.addEventListener('push', (e) => {
+  let d = {};
+  if (e.data) {
+    try {
+      d = e.data.json();
+    } catch (err) {
+      d = { body: e.data.text() };
+    }
+  }
+  const title = d.title || 'Jadwal Belajar';
   e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
+    self.registration.showNotification(title, {
+      body: d.body || '',
+      icon: './icon.svg',
+      badge: './icon.svg',
+      tag: 'jadwal-push',
+      renotify: true,          // tetap berbunyi tiap slot walau tag-nya sama
+      requireInteraction: true, // bertahan sampai disentuh, lebih sulit terlewat
+      vibrate: [500, 200, 500, 200, 500, 200, 500],
+      data: { url: './' },
+    })
   );
 });
 
-self.addEventListener('fetch', e => {
-  const req = e.request;
-  if (req.method !== 'GET') return;
-
-  // Network-first for page navigations so app updates are picked up
-  // immediately; fall back to cache when offline.
-  if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req)
-        .then(res => {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put('./index.html', copy));
-          return res;
-        })
-        .catch(() => caches.match('./index.html').then(r => r || caches.match('./')))
-    );
-    return;
-  }
-
-  // Cache-first for everything else (static assets).
-  e.respondWith(caches.match(req).then(r => r || fetch(req)));
-});
-
-self.addEventListener('notificationclick', e => {
+self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   e.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then(list => {
+    self.clients.matchAll({ type: 'window' }).then((list) => {
       for (const c of list) { if ('focus' in c) return c.focus(); }
       if (self.clients.openWindow) return self.clients.openWindow('./');
     })
   );
+});
+
+/* ── CACHE OFFLINE ── */
+// Dinaikkan ke v6: firebase-sync.js diganti sync.js, dan versi baru memaksa
+// install lama membuang cache-nya supaya index.html baru tidak pernah
+// berpasangan dengan berkas JS lama.
+const CACHE = 'jadwal-v6';
+const ASSETS = ['./', './index.html', './style.css', './curriculum.js', './terms.js', './app.js', './sync.js', './manifest.json', './icon.svg'];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (e) => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+
+  // Permintaan ke API tidak boleh disentuh cache: harus selalu ke jaringan,
+  // dan saat offline biarkan gagal supaya client tahu ia sedang tak tersambung.
+  if (new URL(req.url).pathname.startsWith('/api/')) return;
+
+  // Network-first untuk navigasi supaya pembaruan app langsung terpakai;
+  // jatuh ke cache saat offline.
+  if (req.mode === 'navigate') {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put('./index.html', copy));
+          return res;
+        })
+        .catch(() => caches.match('./index.html').then((r) => r || caches.match('./')))
+    );
+    return;
+  }
+
+  // Cache-first untuk sisanya (aset statis).
+  e.respondWith(caches.match(req).then((r) => r || fetch(req)));
 });

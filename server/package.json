@@ -1,0 +1,16 @@
+{
+  "name": "jadwal-belajar-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sync progres + web push untuk app Jadwal Belajar, pengganti Firestore dan FCM",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -1,0 +1,16 @@
+# Notifikasi harian untuk app Jadwal Belajar, pengganti
+# .github/workflows/notify.yml. Dipasang ke /etc/cron.d/jadwal-belajar-notify
+# (harus milik root, mode 0644, dan wajib diakhiri baris baru).
+#
+# CRON_TZ membuat jadwalnya dibaca sebagai WIB, jadi jamnya ditulis apa adanya
+# tanpa konversi UTC seperti pada cron GitHub Actions dulu.
+CRON_TZ=Asia/Jakarta
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# menit jam  hari bulan hari-pekan  user  perintah
+0 6  * * * root docker exec jadwal-belajar-api node notify.js 0 >> /var/log/jadwal-notify.log 2>&1
+0 9  * * * root docker exec jadwal-belajar-api node notify.js 1 >> /var/log/jadwal-notify.log 2>&1
+0 12 * * * root docker exec jadwal-belajar-api node notify.js 2 >> /var/log/jadwal-notify.log 2>&1
+0 15 * * * root docker exec jadwal-belajar-api node notify.js 3 >> /var/log/jadwal-notify.log 2>&1
+0 18 * * * root docker exec jadwal-belajar-api node notify.js 4 >> /var/log/jadwal-notify.log 2>&1

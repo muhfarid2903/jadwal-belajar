@@ -13,6 +13,13 @@
 #   pasang : git clone https://github.com/muhfarid2903/jadwal-belajar.git /opt/jadwal-belajar
 #            cd /opt/jadwal-belajar/deploy && docker compose up -d
 #   update : git -C /opt/jadwal-belajar pull
+#            (kalau server/ ikut berubah: docker compose up -d --build)
+#
+# Rahasia ada di deploy/.env yang hanya hidup di server dan tidak masuk git:
+#   PASSPHRASE_SCRYPT=<garam>:<hash>   dibuat oleh server/hash-passphrase.js
+#   VAPID_SUBJECT=mailto:...           opsional
+# Kunci VAPID dibuat sendiri oleh server saat start pertama dan disimpan di
+# basis datanya, jadi tidak perlu ditaruh di sini.
 
 services:
   jadwal-belajar:
@@ -27,7 +34,8 @@ services:
     labels:
       traefik.enable: 'true'
       traefik.docker.network: coolify
-      # HTTP hanya untuk tantangan ACME dan pengalihan ke HTTPS.
+      # HTTP hanya untuk tantangan ACME dan pengalihan ke HTTPS. Router ini
+      # mencakup /api juga, jadi permintaan API lewat http ikut dialihkan.
       traefik.http.routers.jadwal-belajar-http.entrypoints: http
       traefik.http.routers.jadwal-belajar-http.rule: Host(`belajar.balanglompo.com`)
       traefik.http.routers.jadwal-belajar-http.middlewares: jadwal-belajar-redirect
@@ -35,9 +43,40 @@ services:
       traefik.http.middlewares.jadwal-belajar-redirect.redirectscheme.permanent: 'true'
       traefik.http.routers.jadwal-belajar.entrypoints: https
       traefik.http.routers.jadwal-belajar.rule: Host(`belajar.balanglompo.com`)
+      traefik.http.routers.jadwal-belajar.priority: '1'
       traefik.http.routers.jadwal-belajar.tls: 'true'
       traefik.http.routers.jadwal-belajar.tls.certresolver: letsencrypt
       traefik.http.services.jadwal-belajar.loadbalancer.server.port: '80'
+
+  # API: login, sync progres, dan langganan Web Push — pengganti Firebase Auth,
+  # Firestore, dan Cloud Messaging. Satu origin dengan situs statisnya, hanya
+  # dibedakan oleh prefiks /api, sehingga cookie sesi tetap SameSite=Strict dan
+  # tidak perlu CORS.
+  jadwal-belajar-api:
+    build:
+      context: ../server
+    image: jadwal-belajar-api:latest
+    container_name: jadwal-belajar-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: Asia/Jakarta
+    volumes:
+      - ./data:/data
+    networks:
+      - coolify
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: coolify
+      # priority lebih tinggi dari router situs statis supaya /api/* mendarat di
+      # sini, sementara sisanya tetap ke nginx.
+      traefik.http.routers.jadwal-belajar-api.entrypoints: https
+      traefik.http.routers.jadwal-belajar-api.rule: Host(`belajar.balanglompo.com`) && PathPrefix(`/api`)
+      traefik.http.routers.jadwal-belajar-api.priority: '10'
+      traefik.http.routers.jadwal-belajar-api.tls: 'true'
+      traefik.http.routers.jadwal-belajar-api.tls.certresolver: letsencrypt
+      traefik.http.services.jadwal-belajar-api.loadbalancer.server.port: '8080'
 
 networks:
   coolify:
