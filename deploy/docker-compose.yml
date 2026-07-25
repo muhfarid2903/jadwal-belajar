@@ -15,6 +15,11 @@
 #   update : git -C /opt/jadwal-belajar pull
 #            (kalau server/ ikut berubah: docker compose up -d --build)
 #
+# PENTING: nginx.conf dipasang sebagai bind mount berkas tunggal, yang terikat
+# inode. `git pull` menulis inode baru, sehingga container tetap membaca versi
+# lama dan `nginx -s reload` tidak menolong. Setiap kali nginx.conf berubah:
+#   docker compose up -d --force-recreate jadwal-belajar
+#
 # Rahasia ada di deploy/.env yang hanya hidup di server dan tidak masuk git:
 #   PASSPHRASE_SCRYPT=<garam>:<hash>   dibuat oleh server/hash-passphrase.js
 #   VAPID_SUBJECT=mailto:...           opsional
