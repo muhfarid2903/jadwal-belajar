@@ -39,8 +39,11 @@ messaging.onBackgroundMessage((payload) => {
 // (previously inlined), so those need to be in ASSETS too, and the version
 // bump forces existing installs to drop the old cache and refetch everything
 // instead of serving a stale index.html next to old inlined-only assets.
-const CACHE = 'jadwal-v4';
-const ASSETS = ['./', './index.html', './style.css', './curriculum.js', './app.js', './firebase-sync.js', './manifest.json', './icon.svg'];
+// Bumped again to v5 for terms.js: assets are served cache-first, so without
+// the bump an existing install would pair the new index.html with the old
+// cached app.js, which knows nothing about the medical terms.
+const CACHE = 'jadwal-v5';
+const ASSETS = ['./', './index.html', './style.css', './curriculum.js', './terms.js', './app.js', './firebase-sync.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

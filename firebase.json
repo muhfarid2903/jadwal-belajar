@@ -41,6 +41,10 @@
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       },
       {
+        "source": "/terms.js",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      },
+      {
         "source": "/app.js",
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       },
